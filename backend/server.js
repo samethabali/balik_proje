@@ -12,10 +12,10 @@ app.use(express.json());
 
 // Veritabanı Ayarları (Şifreni doğru yazdığından emin ol)
 const client = new Client({
-  user: 'postgres',
+  user: 'emre',
   host: 'localhost',
-  database: 'balikcilik_db', // Senin DB ismin
-  password: 'sifren',        // Senin DB şifren
+  database: 'balik_proje', // Senin DB ismin
+  password: 'emre123',        // Senin DB şifren
   port: 5432,
 });
 
@@ -25,6 +25,22 @@ client.connect()
 
 // --- API ENDPOINT ---
 // React bu adrese istek atacak: http://localhost:3000/api/zones
+// Veritabanı bağlantı testi
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const result = await client.query('SELECT NOW() AS now');
+    res.json({
+      ok: true,
+      time: result.rows[0].now,
+    });
+  } catch (err) {
+    console.error('DB test hatası:', err);
+    res.status(500).json({
+      ok: false,
+      error: 'Veritabanına bağlanılamadı',
+    });
+  }
+});
 app.get('/api/zones', async (req, res) => {
   try {
     // PostGIS fonksiyonu ile veriyi doğrudan GeoJSON formatına çeviriyoruz
@@ -34,7 +50,7 @@ app.get('/api/zones', async (req, res) => {
         name, 
         notes, 
         ST_AsGeoJSON(geom) as geometry 
-      FROM lake_zones
+      FROM lake.lake_zones
     `;
     
     const result = await client.query(query);

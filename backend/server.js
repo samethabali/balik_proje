@@ -1,37 +1,68 @@
-// server.js
-require('dotenv').config();
+// backend/server.js
 const express = require('express');
-const cors = require('cors');
-const pool = require('./db');
+const { Client } = require('pg');
+const cors = require('cors'); // Frontend'in Backend'e erişmesine izin verir
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = 3000;
 
+// Güvenlik izni (React 5173 portundan, bu 3000 portuna erişebilsin diye)
 app.use(cors());
 app.use(express.json());
 
-// Sağlık kontrolü
-app.get('/health', (req, res) => {
-  res.json({ message: 'Lake backend çalışıyor 🚤' });
+// Veritabanı Ayarları (Şifreni doğru yazdığından emin ol)
+const client = new Client({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'balikcilik_db', // Senin DB ismin
+  password: 'sifren',        // Senin DB şifren
+  port: 5432,
 });
 
-// Veritabanı bağlantı testi
-app.get('/api/db-test', async (req, res) => {
+client.connect()
+  .then(() => console.log('Veritabanına bağlanıldı'))
+  .catch(err => console.error('Bağlantı hatası', err.stack));
+
+// --- API ENDPOINT ---
+// React bu adrese istek atacak: http://localhost:3000/api/zones
+app.get('/api/zones', async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW() AS now');
+    // PostGIS fonksiyonu ile veriyi doğrudan GeoJSON formatına çeviriyoruz
+    const query = `
+      SELECT 
+        zone_id, 
+        name, 
+        notes, 
+        ST_AsGeoJSON(geom) as geometry 
+      FROM lake_zones
+    `;
+    
+    const result = await client.query(query);
+
+    // Leaflet'in sevdiği "FeatureCollection" formatına dönüştürme
+    const features = result.rows.map(row => ({
+      type: "Feature",
+      properties: {
+        id: row.zone_id,
+        name: row.name,
+        description: row.notes,
+        // Basit bir renklendirme mantığı (İstersen geliştirebiliriz)
+        type: row.name.includes('Gölü') ? 'lake' : 'zone'
+      },
+      geometry: JSON.parse(row.geometry) // String gelen veriyi JSON objesine çevir
+    }));
+
     res.json({
-      ok: true,
-      time: result.rows[0].now,
+      type: "FeatureCollection",
+      features: features
     });
+
   } catch (err) {
-    console.error('DB test hatası:', err);
-    res.status(500).json({
-      ok: false,
-      error: 'Veritabanına bağlanılamadı',
-    });
+    console.error(err.message);
+    res.status(500).send('Sunucu Hatası');
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server ${PORT} portunda çalışıyor`);
+app.listen(port, () => {
+  console.log(`Backend sunucusu çalışıyor: http://localhost:${port}`);
 });

@@ -1,1 +1,13 @@
+# Node
 node_modules/
+npm-debug.log
+dist/
+build/
+
+# Env files
+.env
+backend/.env
+frontend/.env
+
+# Supabase keys
+supabase/.temp/

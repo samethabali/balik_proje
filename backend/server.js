@@ -1,46 +1,59 @@
-// backend/server.js
-// Load env from project root even when running inside /backend
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+// 1. Gerekli Paketleri Yükle
+require('dotenv').config(); // .env dosyasındaki şifreleri okur
 const express = require('express');
 const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
 
+// 2. Kendi Yazdığımız Dosyaları Çağır (Import)
+const pool = require('./config/db'); // Veritabanı bağlantısı
+const zonesRoutes = require('./routes/zonesRoutes');
+const hotspotsRoutes = require('./routes/hotspotsRoutes');
+
+// Middleware'ler (Ara Yazılımlar)
+const requestLogger = require('./middleware/requestLogger');
+const errorHandler = require('./middleware/errorHandler');
+
+// 3. Express Uygulamasını Başlat
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
+// --- AYARLAR VE MIDDLEWARE ---
+
+// CORS: Frontend'in (React - 5173) Backend'e (3000) erişmesine izin ver
 app.use(cors());
+
+// JSON: Gelen isteklerin içindeki JSON verisini okumamızı sağlar
 app.use(express.json());
 
-// --- SUPABASE BAĞLANTISI ---
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+// Logger: Her isteği konsola yaz (Hata ayıklamak için süperdir)
+// Eğer requestLogger dosyasını henüz oluşturmadıysan bu satırı yoruma alabilirsin
+app.use(requestLogger);
 
-// --- TEST ENDPOINT ---
-app.get('/api/db-test', async (req, res) => {
-  const { data, error } = await supabase.from("lake_zones").select("zone_id").limit(1);
 
-  if (error) {
-    return res.status(500).json({ ok: false, error: error.message });
-  }
+// --- ROTALAR (ROUTES) ---
+// Trafik polisi gibi: "zones ile ilgili istek gelirse zonesRoutes'a git"
+app.use('/api/zones', zonesRoutes);
+app.use('/api/hotspots', hotspotsRoutes);
 
-  return res.json({ ok: true, data });
+// Sağlık Kontrolü (Health Check) - Tarayıcıdan http://localhost:3000 yazınca bu çıkar
+app.get('/', (req, res) => {
+  res.send('🎣 Balıkçılık Sistemi API Aktif ve Yüzüyor!');
 });
 
-// --- ZONE LİSTELEME (GeoJSON Formatı) ---
-app.get('/api/zones', async (req, res) => {
-  const { data, error } = await supabase
-    .rpc('get_zones_geojson');  // RPC fonksiyonunu kullanacağız (birazdan vereceğim)
 
-  if (error) {
-    console.error(error);
-    return res.status(500).send("Supabase Hatası");
+// --- HATA YÖNETİMİ (En Sonda Olmalı) ---
+// Eğer yukarıdaki kodlarda bir hata patlarsa burası yakalar ve sunucu çökmez
+app.use(errorHandler);
+
+
+// --- SUNUCUYU ATEŞLE ---
+app.listen(PORT, async () => {
+  console.log(`🚀 Sunucu ${PORT} portunda çalışıyor: http://localhost:${PORT}`);
+
+  // Başlarken veritabanı bağlantısını test et (Hocanın gözüne girmek için ekstra detay)
+  try {
+    const res = await pool.query('SELECT NOW()');
+    console.log(`✅ Veritabanı Bağlantısı Başarılı! (Sunucu Saati: ${res.rows[0].now})`);
+  } catch (err) {
+    console.error('❌ Veritabanı Bağlantı Hatası:', err.message);
   }
-
-  res.json(data);
-});
-
-app.listen(port, () => {
-  console.log(`Backend çalışıyor: http://localhost:${port}`);
 });

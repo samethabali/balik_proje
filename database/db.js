@@ -1,4 +1,4 @@
-require('dotenv').config();
+/*require('dotenv').config();
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -9,4 +9,4 @@ const pool = new Pool({
   database: process.env.PGDATABASE,
 });
 
-module.exports = pool;
+module.exports = pool;*/

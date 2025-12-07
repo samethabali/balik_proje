@@ -3,21 +3,34 @@ const pool = require("../config/db");
 
 // AYARLAR
 const SIMULATION_INTERVAL = 5000; // 5 saniyede bir çalışır
-const MOVEMENT_STEP = 0.15;    // Tekne hızı (~15 metre)
+const MOVEMENT_STEP = 0.015;    // Tekne hızı (~15 metre)
 const SONAR_RANGE = 0.02;       // Radar tarama alanı
-const CLUSTER_DISTANCE = 0.0002;  // 20 metre içindeki balıkları grupla
+const CLUSTER_DISTANCE = 0.02;  // 20 metre içindeki balıkları grupla
 
 // --- YARDIMCI FONKSİYON: Sonar Verilerini Hotspot'a Dönüştür ---
 async function syncSonarToHotspots(client) {
   try {
-    // 1. Çok eski (15 sn+) Hotspotları temizle (Balık kaçtı simülasyonu)
+    // 1. Çok eski hotspot'ları veya teknelerden çok uzak olanları temizle
+    //    - 15 saniyeden eski olanlar
+    //    - VEYA hiçbir ongoing tekneye 60 metreden daha yakın olmayanlar
     await client.query(`
-      DELETE FROM fish_hotspots 
-      WHERE last_seen < NOW() - INTERVAL '15 seconds'
+      DELETE FROM fish_hotspots h
+      WHERE h.last_seen < NOW() - INTERVAL '30 seconds'
+         OR NOT EXISTS (
+            SELECT 1
+            FROM rentals r
+            JOIN boats b ON r.boat_id = b.boat_id
+            WHERE r.status = 'ongoing'
+              AND b.current_geom IS NOT NULL
+              AND ST_DWithin(
+                    h.geom::geography,
+                    b.current_geom::geography,
+                    60  -- metre cinsinden radar menzili
+                  )
+         );
     `);
 
-    // 2. Son 10 saniyedeki radar verilerini analiz et, grupla ve Hotspot tablosuna yaz
-    // ST_ClusterDBSCAN: Yakın noktaları tek bir cluster ID altında toplar.
+    // 2. Son 10 saniyedeki sonar verilerini analiz et, grupla ve Hotspot tablosuna yaz
     const query = `
       INSERT INTO fish_hotspots (species_id, intensity, geom, last_seen, depth)
       SELECT 
@@ -31,8 +44,8 @@ async function syncSonarToHotspots(client) {
           s.*,
           ST_ClusterDBSCAN(
             s.geom,
-            $1::double precision,  -- eps (mesafe eşiği)
-            1                      -- minpoints
+            $1::double precision,  -- eps (mesafe eşiği, ~0.0002 derece)
+            1                      -- min points
           ) OVER () AS cid
         FROM sonar_readings s
         WHERE s.detected_at > NOW() - INTERVAL '10 seconds'
@@ -41,7 +54,6 @@ async function syncSonarToHotspots(client) {
     `;
 
     await client.query(query, [CLUSTER_DISTANCE]);
-
   } catch (err) {
     console.error("Hotspot Sync Hatası:", err);
   }
@@ -66,34 +78,67 @@ async function startSimulation() {
       if (activeRentals.rows.length === 0) return; // Tekne yoksa bekleme
 
       for (const rental of activeRentals.rows) {
-        let { rental_id, boat_id, lon, lat } = rental;
+        let { rental_id, boat_id, lon, lat, name } = rental;
 
         // Koordinat yoksa başlangıç noktası ata (Örn: Göl ortası)
         if (!lon || !lat) { lon = 29.0; lat = 41.0; }
 
         // 2. Tekneyi Hareket Ettir (Random Walk)
-        const newLon = lon + (Math.random() - 0.5) * MOVEMENT_STEP;
-        const newLat = lat + (Math.random() - 0.5) * MOVEMENT_STEP;
+        let newLon = lon + (Math.random() - 0.5) * MOVEMENT_STEP;
+        let newLat = lat + (Math.random() - 0.5) * MOVEMENT_STEP;
 
-        await client.query(`
-          UPDATE boats SET current_geom = ST_SetSRID(ST_MakePoint($1, $2), 4326)
+        // 2. Tekneyi Hareket Ettir (Sadece göl içindeyse)
+        const updateRes = await client.query(`
+          UPDATE boats
+          SET current_geom = ST_SetSRID(ST_MakePoint($1, $2), 4326)
           WHERE boat_id = $3
+            AND EXISTS (
+              SELECT 1
+              FROM lake_zones l
+              WHERE ST_Contains(
+                l.geom,
+                ST_SetSRID(ST_MakePoint($1, $2), 4326)
+              )
+            )
+          RETURNING ST_X(current_geom) AS lon, ST_Y(current_geom) AS lat;
         `, [newLon, newLat, boat_id]);
+
+        // Eğer göl dışına çıkmaya çalıştıysa, hareketi iptal et
+        if (updateRes.rowCount === 0) {
+          // hareket yok, eski konumda kal
+          newLon = lon;
+          newLat = lat;
+        } else {
+          // güncel konumu, sonar için de kullanalım
+          lon = updateRes.rows[0].lon;
+          lat = updateRes.rows[0].lat;
+        }
+
 
         // 3. Radar Taraması (%40 şansla balık bulsun)
         if (Math.random() > 0.6) {
           const signalStrength = Math.floor(Math.random() * 100) + 1;
           // Balığı teknenin biraz yakınına koy
-          const fishLon = newLon + (Math.random() - 0.5) * 0.00001;
-          const fishLat = newLat + (Math.random() - 0.5) * 0.00001;
+          const fishLon = lon + (Math.random() - 0.5) * 0.00001;
+          const fishLat = lat + (Math.random() - 0.5) * 0.00001;
 
           await client.query(`
-              INSERT INTO sonar_readings (rental_id, geom, signal_strength)
-              VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4)
-            `, [rental_id, fishLon, fishLat, signalStrength]);
+            INSERT INTO sonar_readings (rental_id, geom, signal_strength)
+            SELECT 
+              $1, 
+              ST_SetSRID(ST_MakePoint($2, $3), 4326), 
+              $4
+            WHERE EXISTS (
+              SELECT 1
+              FROM lake_zones l
+              WHERE ST_Contains(
+                l.geom,
+                ST_SetSRID(ST_MakePoint($2, $3), 4326)
+              )
+            )
+          `, [rental_id, fishLon, fishLat, signalStrength]);
 
-          console.log(`📡 Sinyal: ${rental.name} balık buldu! (Güç: ${signalStrength})`);
-
+          console.log(`📡 Sinyal: ${name} balık buldu! (Güç: ${signalStrength})`);
         }
       }
 

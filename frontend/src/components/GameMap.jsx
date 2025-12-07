@@ -57,18 +57,31 @@ const GameMap = () => {
     loadZones();
   }, []);
 
-  // 🔹 2) HOTSPOT VERİSİNİ YÜKLE
+  // 🔹 2) HOTSPOT VERİSİNİ YÜKLE & PERİYODİK GÜNCELLE
   useEffect(() => {
+    let isMounted = true;
+
     const loadHotspots = async () => {
       try {
         const data = await fetchHotspots(); // FeatureCollection bekliyoruz
-        setHotspots(data.features || []);
+        if (isMounted) {
+          setHotspots(data.features || []);
+        }
       } catch (err) {
         console.error('Hotspots yüklenirken hata:', err);
       }
     };
 
+    // İlk yükleme
     loadHotspots();
+
+    // Her 5 saniyede bir tekrar çek
+    const interval = setInterval(loadHotspots, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // 🔹 3) DEMO: Hareketli tek balık (istersen sonra kaldırırız)
@@ -155,25 +168,6 @@ const GameMap = () => {
         <GeoJSON data={lakeData} style={getStyle} onEachFeature={onEachFeature} />
       )}
 
-      {/* 🔹 HOTSPOT MARKER'LARI */}
-      {hotspots.map((feature) => {
-        const { id, species_name, intensity, depth, last_seen } = feature.properties;
-        const [lng, lat] = feature.geometry.coordinates; // GeoJSON: [lng, lat]
-
-        return (
-          <Marker key={id} position={[lat, lng]} icon={fishIcon}>
-            <Popup>
-              <strong>{species_name}</strong>
-              <br />
-              Yoğunluk: {intensity} / 10
-              <br />
-              Derinlik: {depth} m
-              <br />
-              Son görülme: {new Date(last_seen).toLocaleString('tr-TR')}
-            </Popup>
-          </Marker>
-        );
-      })}
 
       {/* 🔹 HOTSPOT MARKER'LARI */}
       {hotspots.map((feature) => {

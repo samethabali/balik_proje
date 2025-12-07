@@ -1,5 +1,6 @@
 // frontend/src/components/Sidebar.jsx
 import React, { useState, useEffect } from 'react';
+import Forum from './Forum'; // <--- Forum bileşenini import ettik
 import {
   fetchAvailableBoats,
   createBoatRental,
@@ -14,10 +15,11 @@ const TABS = {
   ACCOUNT: 'account',
 };
 
-const Sidebar = () => {
+// Reis buraya dikkat: selectedZone ve currentUser propslarını ekledim
+const Sidebar = ({ selectedZone, currentUser }) => {
   const [activeTab, setActiveTab] = useState(TABS.INFO);
 
-  // 🔹 Tekne sekmesi için ek state'ler
+  // 🔹 Tekne sekmesi için state'ler
   const [availableBoats, setAvailableBoats] = useState([]);
   const [boatsLoading, setBoatsLoading] = useState(false);
   const [boatsError, setBoatsError] = useState(null);
@@ -82,6 +84,8 @@ const Sidebar = () => {
     }
   };
 
+  // --- TAB RENDER FONKSİYONLARI ---
+
   const renderInfoTab = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <h2
@@ -95,10 +99,10 @@ const Sidebar = () => {
       </h2>
 
       <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.6 }}>
-        Türkiye&apos;nin en büyük sodalı gölü olan Van Gölü üzerinde güvenli ve
-        kontrollü balıkçılık deneyimi sunuyoruz. Amacımız, hem sürdürülebilir
-        avcılığı desteklemek hem de göl ekosistemini koruyarak keyifli bir
-        deneyim yaşatmak.
+        {selectedZone 
+          ? `Şu an "${selectedZone.name}" bölgesini inceliyorsunuz. Bu bölgedeki avlanma kurallarına dikkat ediniz.`
+          : "Türkiye'nin en büyük sodalı gölü olan Van Gölü üzerinde güvenli ve kontrollü balıkçılık deneyimi sunuyoruz."
+        }
       </p>
 
       <div
@@ -110,25 +114,9 @@ const Sidebar = () => {
           fontSize: '0.85rem',
         }}
       >
-        <strong>Kuruluş Yılı:</strong> 2025<br />
+        <strong>Seçili Bölge:</strong> {selectedZone ? selectedZone.name : "Tüm Göl"} <br />
         <strong>Konum:</strong> Van Gölü / Gevaş Merkezi<br />
-        <strong>Hizmetler:</strong> Tekne kiralama, ekipman kiralama, rehberli
-        turlar, eğitim ve bilgilendirme.
-      </div>
-
-      <div
-        style={{
-          marginTop: 'auto',
-          paddingTop: 16,
-          borderTop: '1px solid #123',
-          fontSize: '0.8rem',
-          color: '#9aa4b1',
-        }}
-      >
-        <p style={{ margin: 0 }}>
-          Harita üzerinde görülen balık yoğunlukları ve bölgeler, gerçek zamanlı
-          sensör verileri ve kullanıcı gözlemlerine göre güncellenir.
-        </p>
+        <strong>Hizmetler:</strong> Tekne kiralama, ekipman kiralama, rehberli turlar.
       </div>
     </div>
   );
@@ -144,8 +132,7 @@ const Sidebar = () => {
     >
       <h3 style={{ color: '#00ffff', marginTop: 0 }}>🛶 Tekne Kiralama</h3>
       <p style={{ fontSize: '0.9rem', color: '#ccc' }}>
-        Demo modunda, giriş yapmadan tekne kiralayabilirsiniz. Kiralama
-        başlattığınızda tekne göle açılır ve radar balıkları göstermeye başlar.
+        Demo modunda, giriş yapmadan tekne kiralayabilirsiniz.
       </p>
 
       {boatsLoading && (
@@ -163,13 +150,7 @@ const Sidebar = () => {
       )}
 
       {!boatsLoading && !boatsError && availableBoats.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {availableBoats.map((boat) => (
             <div
               key={boat.boat_id}
@@ -187,9 +168,7 @@ const Sidebar = () => {
               <div>
                 <strong>{boat.name}</strong>
                 <br />
-                Kapasite: {boat.capacity} kişi
-                <br />
-                Saatlik: {boat.price_per_hour} ₺
+                Kapasite: {boat.capacity} kişi - {boat.price_per_hour} ₺/saat
               </div>
               <button
                 style={{
@@ -205,7 +184,7 @@ const Sidebar = () => {
                 disabled={!!activeRental}
                 onClick={() => handleRentBoat(boat.boat_id)}
               >
-                Kirala (60 dk)
+                Kirala
               </button>
             </div>
           ))}
@@ -227,8 +206,6 @@ const Sidebar = () => {
           <br />
           Kiralama ID: {activeRental.rental_id}
           <br />
-          Başlangıç: {new Date(activeRental.start_at).toLocaleString('tr-TR')}
-          <br />
           <button
             style={{
               marginTop: 8,
@@ -240,23 +217,16 @@ const Sidebar = () => {
               background: '#22c55e',
               color: '#00111f',
               fontWeight: 'bold',
-              fontSize: '0.8rem',
             }}
             onClick={handleCompleteRental}
           >
-            Kiralamayı Bitir (İskeleye Dön)
+            Kiralamayı Bitir
           </button>
         </div>
       )}
 
       {actionMessage && (
-        <p
-          style={{
-            fontSize: '0.8rem',
-            color: '#a5b4fc',
-            marginTop: 4,
-          }}
-        >
+        <p style={{ fontSize: '0.8rem', color: '#a5b4fc', marginTop: 4 }}>
           {actionMessage}
         </p>
       )}
@@ -269,22 +239,17 @@ const Sidebar = () => {
       <p style={{ fontSize: '0.9rem', color: '#ccc' }}>
         Olta, ağ, can yeleği ve diğer ekipmanları buradan kiralayabileceksiniz.
       </p>
-      <p style={{ fontSize: '0.85rem', color: '#888' }}>
-        (Bu alanı backend hazır olduğunda gerçek verilerle dolduracağız.)
-      </p>
     </div>
   );
 
+  // 🔹 İŞTE FORUM BURADA DEVREYE GİRİYOR
   const renderForumTab = () => (
-    <div style={{ marginTop: '10px' }}>
-      <h3 style={{ color: '#00ffff', marginTop: 0 }}>💬 Forum</h3>
-      <p style={{ fontSize: '0.9rem', color: '#ccc' }}>
-        Diğer balıkçılarla deneyimlerinizi paylaşabileceğiniz alan.
-      </p>
-      <p style={{ fontSize: '0.85rem', color: '#888' }}>
-        (İlk aşamada sadece okunabilir liste, yorum ve paylaşım için giriş
-        gerektireceğiz.)
-      </p>
+    <div style={{ marginTop: '10px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+       {/* Forum bileşenine propsları aktarıyoruz */}
+       <Forum 
+          selectedZone={selectedZone} 
+          currentUser={currentUser} 
+       />
     </div>
   );
 
@@ -292,28 +257,19 @@ const Sidebar = () => {
     <div style={{ marginTop: '10px' }}>
       <h3 style={{ color: '#00ffff', marginTop: 0 }}>👤 Hesap</h3>
       <p style={{ fontSize: '0.9rem', color: '#ccc' }}>
-        Buraya Supabase tabanlı giriş / kayıt formu gelecek.
-      </p>
-      <p style={{ fontSize: '0.85rem', color: '#888' }}>
-        (Şimdilik taslak, backend auth kısmını birlikte yazacağız.)
+        Buraya Giriş / Kayıt formu gelecek.
       </p>
     </div>
   );
 
   const renderActiveTab = () => {
     switch (activeTab) {
-      case TABS.INFO:
-        return renderInfoTab();
-      case TABS.BOAT:
-        return renderBoatTab();
-      case TABS.EQUIP:
-        return renderEquipTab();
-      case TABS.FORUM:
-        return renderForumTab();
-      case TABS.ACCOUNT:
-        return renderAccountTab();
-      default:
-        return renderInfoTab();
+      case TABS.INFO: return renderInfoTab();
+      case TABS.BOAT: return renderBoatTab();
+      case TABS.EQUIP: return renderEquipTab();
+      case TABS.FORUM: return renderForumTab();
+      case TABS.ACCOUNT: return renderAccountTab();
+      default: return renderInfoTab();
     }
   };
 
@@ -326,8 +282,8 @@ const Sidebar = () => {
     background: activeTab === tab ? '#00ffff' : 'transparent',
     color: activeTab === tab ? '#00111f' : '#9aa4b1',
     fontWeight: activeTab === tab ? 'bold' : 'normal',
-    borderBottom:
-      activeTab === tab ? '2px solid #00ffff' : '1px solid #123',
+    borderBottom: activeTab === tab ? '2px solid #00ffff' : '1px solid #123',
+    transition: 'all 0.2s ease',
   });
 
   return (
@@ -341,6 +297,7 @@ const Sidebar = () => {
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '-5px 0 15px rgba(0,0,0,0.5)',
+        height: '100%', // Yüksekliği fulledik ki forum scroll olsun
       }}
     >
       <div
@@ -352,39 +309,14 @@ const Sidebar = () => {
           paddingBottom: '4px',
         }}
       >
-        <button
-          style={tabButtonStyle(TABS.INFO)}
-          onClick={() => setActiveTab(TABS.INFO)}
-        >
-          Bilgi
-        </button>
-        <button
-          style={tabButtonStyle(TABS.BOAT)}
-          onClick={() => setActiveTab(TABS.BOAT)}
-        >
-          Tekne
-        </button>
-        <button
-          style={tabButtonStyle(TABS.EQUIP)}
-          onClick={() => setActiveTab(TABS.EQUIP)}
-        >
-          Ekipman
-        </button>
-        <button
-          style={tabButtonStyle(TABS.FORUM)}
-          onClick={() => setActiveTab(TABS.FORUM)}
-        >
-          Forum
-        </button>
-        <button
-          style={tabButtonStyle(TABS.ACCOUNT)}
-          onClick={() => setActiveTab(TABS.ACCOUNT)}
-        >
-          Giriş
-        </button>
+        <button style={tabButtonStyle(TABS.INFO)} onClick={() => setActiveTab(TABS.INFO)}>Bilgi</button>
+        <button style={tabButtonStyle(TABS.BOAT)} onClick={() => setActiveTab(TABS.BOAT)}>Tekne</button>
+        <button style={tabButtonStyle(TABS.EQUIP)} onClick={() => setActiveTab(TABS.EQUIP)}>Ekipman</button>
+        <button style={tabButtonStyle(TABS.FORUM)} onClick={() => setActiveTab(TABS.FORUM)}>Forum</button>
+        <button style={tabButtonStyle(TABS.ACCOUNT)} onClick={() => setActiveTab(TABS.ACCOUNT)}>Giriş</button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         {renderActiveTab()}
       </div>
     </div>

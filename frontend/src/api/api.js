@@ -1,6 +1,9 @@
 // frontend/src/api/api.js
 
+// 1. TEK BİR ANA ADRES TANIMLIYORUZ
 const BASE_URL = 'http://localhost:3000/api';
+
+// --- HARİTA VE TEKNE FONKSİYONLARI (Zaten Çalışanlar) ---
 
 export const fetchZones = async () => {
   const response = await fetch(`${BASE_URL}/zones`);
@@ -20,14 +23,12 @@ export const fetchActiveBoats = async () => {
   return response.json();
 };
 
-// 🔹 Müsait tekneler (iskelede duranlar)
 export const fetchAvailableBoats = async () => {
   const response = await fetch(`${BASE_URL}/boats/available`);
   if (!response.ok) throw new Error('Müsait tekneler çekilemedi');
   return response.json();
 };
 
-// 🔹 Tekne kiralama başlat
 export const createBoatRental = async (boatId, durationMinutes = 60) => {
   const response = await fetch(`${BASE_URL}/rentals/boat`, {
     method: 'POST',
@@ -39,11 +40,9 @@ export const createBoatRental = async (boatId, durationMinutes = 60) => {
     const err = await response.json().catch(() => null);
     throw new Error(err?.error || 'Tekne kiralanamadı');
   }
-
   return response.json();
 };
 
-// 🔹 Kiralamayı bitir
 export const completeBoatRental = async (rentalId) => {
   const response = await fetch(`${BASE_URL}/rentals/${rentalId}/complete`, {
     method: 'POST',
@@ -53,6 +52,54 @@ export const completeBoatRental = async (rentalId) => {
     const err = await response.json().catch(() => null);
     throw new Error(err?.error || 'Kiralama tamamlanamadı');
   }
+  return response.json();
+};
 
+// --- FORUM FONKSİYONLARI (DÜZELTİLEN KISIM) ---
+// Hata: Eski kodda 'request' fonksiyonu ve 'API_BASE' değişkeni yoktu.
+// Düzeltme: Hepsini 'fetch' ve 'BASE_URL' yapısına çevirdim.
+
+// 1. Tüm postları getir
+export const fetchAllPosts = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/forum/posts`);
+    if (!response.ok) return []; 
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("Forum postları çekilemedi:", error);
+    return [];
+  }
+};
+
+// 2. Belirli bir bölgenin postlarını getir
+export const fetchZonePosts = async (zoneId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/forum/zone/${zoneId}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn(`Zone ${zoneId} postları çekilemedi:`, error);
+    return [];
+  }
+};
+
+// 3. Yeni post oluştur
+export const createPost = async (postData) => {
+  const response = await fetch(`${BASE_URL}/forum/posts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(postData),
+  });
+  
+  if (!response.ok) throw new Error('Post atılamadı');
+  return response.json();
+};
+
+// 4. Yorumları getir
+export const fetchComments = async (postId) => {
+  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`);
+  if (!response.ok) throw new Error('Yorumlar alınamadı');
   return response.json();
 };

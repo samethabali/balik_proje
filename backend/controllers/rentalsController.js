@@ -70,3 +70,20 @@ exports.completeEquipmentRental = asyncWrapper(async (req, res) => {
         return res.status(400).json({ error: err.message });
     }
 });
+
+exports.getMyActiveEquipmentRentals = asyncWrapper(async (req, res) => {
+    // NOT: Giriş sistemi gelince burası req.user.id olacak.
+    // Şimdilik User 1 olarak sabitliyoruz.
+    const HARDCODED_USER_ID = 1; 
+
+    const rentals = await rentalsService.getMyActiveEquipmentRentals(HARDCODED_USER_ID);
+    res.json(rentals);
+});
+
+exports.returnAllEquipment = asyncWrapper(async (req, res) => {
+    // Giriş sistemi gelene kadar User 1 sabit
+    const HARDCODED_USER_ID = 1;
+
+    const result = await rentalsService.returnAllMyEquipment(HARDCODED_USER_ID);
+    res.json(result);
+});

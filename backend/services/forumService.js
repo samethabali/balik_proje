@@ -1,6 +1,8 @@
-const pool = require('../config/db'); // PostgreSQL bağlantısı
+// backend/services/forumService.js
+const pool = require('../config/db'); // Veritabanı bağlantısı
 
 class ForumService {
+  
   // 1. Tüm Postları Çek
   static async getAllPosts() {
     const query = `
@@ -20,9 +22,11 @@ class ForumService {
   static async getPostsByZone(zoneId) {
     const query = `
       SELECT p.post_id, p.title, p.content, p.created_at,
-             u.full_name as author
+             u.full_name as author,
+             z.name as zone_name
       FROM posts p
       JOIN users u ON p.user_id = u.user_id
+      LEFT JOIN lake_zones z ON p.zone_id = z.zone_id
       WHERE p.zone_id = $1
       ORDER BY p.created_at DESC
     `;
@@ -38,6 +42,7 @@ class ForumService {
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
+    // Varsayılan olarak 'public' atıyoruz
     const { rows } = await pool.query(query, [user_id, title, content, zone_id, visibility || 'public']);
     return rows[0];
   }

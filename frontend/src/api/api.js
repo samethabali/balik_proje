@@ -89,6 +89,15 @@ export const completeEquipmentRental = async (rentalId) => {
   return response.json();
 };
 
+export const returnAllEquipment = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/equipment/return-all`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error('Toplu iade işlemi başarısız');
+  return response.json();
+};
+
 // --- FORUM FONKSİYONLARI (DÜZELTİLEN KISIM) ---
 // Hata: Eski kodda 'request' fonksiyonu ve 'API_BASE' değişkeni yoktu.
 // Düzeltme: Hepsini 'fetch' ve 'BASE_URL' yapısına çevirdim.
@@ -135,5 +144,23 @@ export const createPost = async (postData) => {
 export const fetchComments = async (postId) => {
   const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`);
   if (!response.ok) throw new Error('Yorumlar alınamadı');
+  return response.json();
+};
+
+// 5. Yorum Yap
+export const createComment = async (postId, userId, content) => {
+  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, content }),
+  });
+
+  if (!response.ok) throw new Error('Yorum yapılamadı');
+  return response.json();
+};
+
+export const fetchMyActiveEquipment = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/equipment/my-active`);
+  if (!response.ok) throw new Error('Kiralamalarım çekilemedi');
   return response.json();
 };

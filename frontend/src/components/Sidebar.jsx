@@ -65,26 +65,37 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   const [activities, setActivities] = useState({ past: [], current: [], upcoming: [] });
   const [activitiesLoading, setActivitiesLoading] = useState(false);
 
-  // BOAT tab aktif olduğunda müsait tekneleri yükle (AYNEN KORUNDU)
+  // BOAT tab aktif olduğunda müsait tekneleri VE benim aktif kiralamamı yükle
   useEffect(() => {
     if (activeTab !== TABS.BOAT) return;
 
-    const loadBoats = async () => {
+    const loadBoatsData = async () => {
       setBoatsLoading(true);
       setBoatsError(null);
       try {
-        const data = await fetchAvailableBoats();
-        setAvailableBoats(data);
+        // 1. Müsait Tekneleri Çek
+        const availableData = await fetchAvailableBoats();
+        setAvailableBoats(availableData);
+        const userId = currentUser?.user_id || 1; 
+
+        const myRentals = await fetchMyActiveBoatRentals(userId);
+        
+        if (myRentals && myRentals.length > 0) {
+          setActiveRental(myRentals[0]);
+        } else {
+          setActiveRental(null);
+        }
+
       } catch (err) {
         console.error(err);
-        setBoatsError('Tekneler yüklenirken bir hata oluştu.');
+        setBoatsError('Tekne verileri alınırken hata oluştu.');
       } finally {
         setBoatsLoading(false);
       }
     };
 
-    loadBoats();
-  }, [activeTab]);
+    loadBoatsData();
+  }, [activeTab, currentUser]); // currentUser değişirse de tetiklensin
 
   // EQUIP tab aktif olduğunda müsait ekipmanları VE kiraladıklarımı yükle (GÜNCELLENDİ)
   useEffect(() => {

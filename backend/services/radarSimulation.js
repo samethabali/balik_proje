@@ -2,11 +2,11 @@ const pool = require("../config/db");
 
 
 // AYARLAR
-const SIMULATION_INTERVAL = 100; // 100ms'de bir çalışır (akıcı hareket için)
+const SIMULATION_INTERVAL = 2000; // 1s'de bir çalışır
 const MOVEMENT_STEP = 0.002;    // Tekne hızı (küçük adımlar = akıcı hareket)
 const SONAR_RANGE = 0.02;       // Radar tarama alanı
 const CLUSTER_DISTANCE = 0.2;  // 20 metre içindeki balıkları grupla
-const DIRECTION_CHANGE_CHANCE = 0.1; // %10 şansla yön değiştir
+const DIRECTION_CHANGE_CHANCE = 0.3; // %30 şansla yön değiştir
 const DIRECTION_CHANGE_AMOUNT = 0.3; // Yön değişikliği miktarı (radyan)
 const FISH_DETECTION_INTERVAL = 10000; // Her 3 saniyede bir balık taraması yap
 const FISH_DETECTION_CHANCE = 0.6; // %60 şansla balık bul

@@ -9,27 +9,26 @@ import { fetchZones, fetchHotspots, fetchActiveBoats } from '../api/api';
 
 // --- İKON TANIMLARI ---
 // Balık ikonu (SVG)
+// --- YENİ SONAR İKONU (SVG DEĞİL, CSS IŞIK EFEKTİ) ---
 const fishIcon = new L.DivIcon({
-  className: 'custom-fish-icon',
+  className: 'sonar-blip', // CSS sınıfı (aşağıda stil eklemeye gerek yok, inline yazdık)
   html: `
     <div style="
-      width: 32px; 
-      height: 32px; 
-      display: flex; 
-      align-items: center; 
+      width: 24px; 
+      height: 24px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 255, 255, 1) 0%, rgba(0, 255, 255, 0.4) 40%, rgba(0, 255, 255, 0) 70%);
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
     ">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1s1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm0 2c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5z" fill="#00ffff"/>
-        <circle cx="10" cy="8" r="1.5" fill="#ffffff"/>
-        <path d="M12 20c-1.1 0-2-.9-2-2h4c0 1.1-.9 2-2 2z" fill="#00ffff"/>
-      </svg>
+      <div style="width: 4px; height: 4px; background: #fff; border-radius: 50%;"></div>
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16]
+  iconSize: [24, 24], // Boyutu biraz küçülttük, daha kibar dursun
+  iconAnchor: [12, 12], // Tam ortalamak için yarısı
+  popupAnchor: [0, -12]
 });
 
 // Tekne ikonu (SVG)
@@ -108,7 +107,7 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
       } catch (err) { console.error('Veri hatası:', err); }
     };
     loadData();
-    const interval = setInterval(loadData, 5000);
+    const interval = setInterval(loadData, 2000);
     return () => { isMounted = false; clearInterval(interval); };
   }, []);
 

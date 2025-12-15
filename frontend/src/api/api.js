@@ -3,6 +3,13 @@
 // 1. TEK BİR ANA ADRES TANIMLIYORUZ
 const BASE_URL = 'http://localhost:3000/api';
 
+const getToken = () => localStorage.getItem('token');
+
+const authHeaders = () => {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // --- HARİTA VE TEKNE FONKSİYONLARI (Zaten Çalışanlar) ---
 
 export const fetchZones = async () => {
@@ -32,7 +39,7 @@ export const fetchAvailableBoats = async () => {
 export const createBoatRental = async (boatId, durationMinutes = 60) => {
   const response = await fetch(`${BASE_URL}/rentals/boat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ boatId, durationMinutes }),
   });
 
@@ -46,6 +53,7 @@ export const createBoatRental = async (boatId, durationMinutes = 60) => {
 export const completeBoatRental = async (rentalId) => {
   const response = await fetch(`${BASE_URL}/rentals/${rentalId}/complete`, {
     method: 'POST',
+    headers: { ...authHeaders() },
   });
 
   if (!response.ok) {
@@ -66,7 +74,7 @@ export const fetchAvailableEquipment = async () => {
 export const createEquipmentRental = async (equipmentId, durationMinutes = 60) => {
   const response = await fetch(`${BASE_URL}/rentals/equipment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ equipmentId, durationMinutes }),
   });
 
@@ -80,6 +88,7 @@ export const createEquipmentRental = async (equipmentId, durationMinutes = 60) =
 export const completeEquipmentRental = async (rentalId) => {
   const response = await fetch(`${BASE_URL}/rentals/equipment/${rentalId}/complete`, {
     method: 'POST',
+    headers: { ...authHeaders() },
   });
 
   if (!response.ok) {
@@ -92,7 +101,7 @@ export const completeEquipmentRental = async (rentalId) => {
 export const returnAllEquipment = async () => {
   const response = await fetch(`${BASE_URL}/rentals/equipment/return-all`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...authHeaders() },
   });
   if (!response.ok) throw new Error('Toplu iade işlemi başarısız');
   return response.json();
@@ -106,7 +115,7 @@ export const returnAllEquipment = async () => {
 export const fetchAllPosts = async () => {
   try {
     const response = await fetch(`${BASE_URL}/forum/posts`);
-    if (!response.ok) return []; 
+    if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
@@ -132,10 +141,10 @@ export const fetchZonePosts = async (zoneId) => {
 export const createPost = async (postData) => {
   const response = await fetch(`${BASE_URL}/forum/posts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(postData),
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(postData), // user_id yok!
   });
-  
+
   if (!response.ok) throw new Error('Post atılamadı');
   return response.json();
 };
@@ -148,11 +157,11 @@ export const fetchComments = async (postId) => {
 };
 
 // 5. Yorum Yap
-export const createComment = async (postId, userId, content) => {
+export const createComment = async (postId, content) => {
   const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userId, content }),
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ content }), // user_id yok!
   });
 
   if (!response.ok) throw new Error('Yorum yapılamadı');
@@ -160,7 +169,9 @@ export const createComment = async (postId, userId, content) => {
 };
 
 export const fetchMyActiveEquipment = async () => {
-  const response = await fetch(`${BASE_URL}/rentals/equipment/my-active`);
+  const response = await fetch(`${BASE_URL}/rentals/equipment/my-active`, {
+    headers: { ...authHeaders() },
+  });
   if (!response.ok) throw new Error('Kiralamalarım çekilemedi');
   return response.json();
 };
@@ -169,21 +180,29 @@ export const fetchMyActiveEquipment = async () => {
 
 // Kullanıcı bilgilerini getir
 export const fetchUserInfo = async (userId) => {
-  const response = await fetch(`${BASE_URL}/users/${userId}`);
+  const response = await fetch(`${BASE_URL}/users/${userId}`, {
+    headers: { ...authHeaders() },
+  });
+
   if (!response.ok) throw new Error('Kullanıcı bilgileri alınamadı');
   return response.json();
 };
 
-// Kullanıcının aktif tekne kiralamalarını getir
-export const fetchMyActiveBoatRentals = async (userId) => {
-  const response = await fetch(`${BASE_URL}/rentals/boat/my-active?userId=${userId}`);
+// Kullanıcının aktif tekne kiralamalarını getir, burası aklımda
+export const fetchMyActiveBoatRentals = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/boat/my-active`, {
+    headers: { ...authHeaders() },
+  });
   if (!response.ok) throw new Error('Tekne kiralamaları alınamadı');
   return response.json();
 };
 
 // Kullanıcının kendi postlarını getir
-export const fetchMyPosts = async (userId) => {
-  const response = await fetch(`${BASE_URL}/forum/posts/my-posts?userId=${userId}`);
+export const fetchMyPosts = async () => {
+  const response = await fetch(`${BASE_URL}/forum/posts/my-posts`, {
+    headers: { ...authHeaders() },
+  });
+
   if (!response.ok) throw new Error('Postlar alınamadı');
   return response.json();
 };
@@ -200,4 +219,40 @@ export const fetchZoneActivities = async (zoneId) => {
     console.warn(`Zone ${zoneId} etkinlikleri çekilemedi:`, error);
     return { past: [], current: [], upcoming: [] };
   }
+};
+
+// auth ve login işlemleri için.
+export const loginUser = async (email, password) => {
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) throw new Error(data?.error || 'Giriş başarısız');
+  return data; // { user, token }
+};
+
+export const registerUser = async (full_name, email, password, phone) => {
+  const response = await fetch(`${BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ full_name, email, password, phone }),
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || 'Kayıt başarısız');
+  return data; // { user, token }
+};
+
+export const fetchMe = async (token) => {
+  const response = await fetch(`${BASE_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || 'Me alınamadı');
+  return data; // user
 };

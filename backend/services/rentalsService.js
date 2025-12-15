@@ -6,48 +6,45 @@ const DOCK_LON = 42.90;
 const DOCK_LAT = 38.60;
 
 // 🔹 Tekne kiralama başlat
-exports.createBoatRental = async ({ boatId, durationMinutes = 60 }) => {
+exports.createBoatRental = async ({ userId, boatId, durationMinutes = 60 }) => {
     const client = await pool.connect();
-
     try {
         await client.query('BEGIN');
 
-        // 1) Tekneyi kilitle ve uygun mu kontrol et
         const boatRes = await client.query(
             `SELECT boat_id, status, current_geom FROM boats WHERE boat_id = $1 FOR UPDATE;`,
             [boatId]
         );
-
         if (boatRes.rowCount === 0) throw new Error('Boat not found');
-        const boat = boatRes.rows[0];
 
+        const boat = boatRes.rows[0];
         if (boat.status !== 'available') throw new Error('Boat is not available');
 
-        // 2) current_geom boşsa iskeleye koy
         if (!boat.current_geom) {
             await client.query(
-                `UPDATE boats SET current_geom = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE boat_id = $3;`,
+                `UPDATE boats
+         SET current_geom = ST_SetSRID(ST_MakePoint($1, $2), 4326)
+         WHERE boat_id = $3;`,
                 [DOCK_LON, DOCK_LAT, boatId]
             );
         }
 
-        const safeDuration = typeof durationMinutes === 'number' && Number.isFinite(durationMinutes) ? durationMinutes : 60;
+        const safeDuration =
+            typeof durationMinutes === 'number' && Number.isFinite(durationMinutes)
+                ? durationMinutes
+                : 60;
 
-        // 3) Kiralama kaydı oluştur (user_id = 1 demo)
         const rentalRes = await client.query(
             `INSERT INTO rentals (user_id, boat_id, start_at, end_at, status)
-             VALUES ($1, $2, NOW(), NOW() + ($3 || ' minutes')::interval, 'ongoing')
-             RETURNING rental_id, user_id, boat_id, start_at, end_at, status;`,
-            [1, boatId, safeDuration]
+       VALUES ($1, $2, NOW(), NOW() + ($3 || ' minutes')::interval, 'ongoing')
+       RETURNING rental_id, user_id, boat_id, start_at, end_at, status;`,
+            [userId, boatId, safeDuration]
         );
 
-        const rental = rentalRes.rows[0];
-
-        // 4) Teknenin durumunu rented yap
         await client.query(`UPDATE boats SET status = 'rented' WHERE boat_id = $1;`, [boatId]);
 
         await client.query('COMMIT');
-        return rental;
+        return rentalRes.rows[0];
     } catch (err) {
         await client.query('ROLLBACK');
         throw err;
@@ -56,37 +53,41 @@ exports.createBoatRental = async ({ boatId, durationMinutes = 60 }) => {
     }
 };
 
-// 🔹 Kiralamayı bitir, tekneyi iskeleye döndür ve FİYAT HESAPLA
-exports.completeBoatRental = async (rentalId) => {
-    const client = await pool.connect();
 
+// 🔹 Kiralamayı bitir, tekneyi iskeleye döndür ve FİYAT HESAPLA
+exports.completeBoatRental = async ({ userId, rentalId }) => {
+    const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // 1) Kiralamayı bitir ve süreyi al
         const rentalRes = await client.query(
             `UPDATE rentals
-             SET status = 'completed', end_at = NOW()
-             WHERE rental_id = $1 AND status = 'ongoing'
-             RETURNING rental_id, boat_id, start_at, end_at, 
-             EXTRACT(EPOCH FROM (NOW() - start_at)) as duration_seconds;`,
-            [rentalId]
+       SET status = 'completed', end_at = NOW()
+       WHERE rental_id = $1 AND user_id = $2 AND status = 'ongoing'
+       RETURNING rental_id, boat_id, start_at, end_at,
+       EXTRACT(EPOCH FROM (NOW() - start_at)) as duration_seconds;`,
+            [rentalId, userId]
         );
 
-        if (rentalRes.rowCount === 0) throw new Error('Devam eden kiralama bulunamadı');
+        if (rentalRes.rowCount === 0) {
+            throw new Error('Devam eden kiralama bulunamadı (veya size ait değil).');
+        }
 
         const rental = rentalRes.rows[0];
-        const durationHours = Math.ceil(rental.duration_seconds / 3600); // Yukarı yuvarla
+        const durationHours = Math.ceil(rental.duration_seconds / 3600);
 
-        // 2) Teknenin saatlik ücretini öğren
-        const boatRes = await client.query('SELECT price_per_hour FROM boats WHERE boat_id = $1', [rental.boat_id]);
-        const pricePerHour = boatRes.rows[0]?.price_per_hour || 50; 
-        
+        const boatRes = await client.query(
+            'SELECT price_per_hour FROM boats WHERE boat_id = $1',
+            [rental.boat_id]
+        );
+        const pricePerHour = parseFloat(boatRes.rows[0]?.price_per_hour || 50);
         const totalPrice = durationHours * pricePerHour;
 
-        // 3) Tekneyi iskeleye çek ve available yap
         await client.query(
-            `UPDATE boats SET status = 'available', current_geom = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE boat_id = $3;`,
+            `UPDATE boats
+       SET status = 'available',
+           current_geom = ST_SetSRID(ST_MakePoint($1, $2), 4326)
+       WHERE boat_id = $3;`,
             [DOCK_LON, DOCK_LAT, rental.boat_id]
         );
 
@@ -100,8 +101,9 @@ exports.completeBoatRental = async (rentalId) => {
     }
 };
 
+
 // 🔹 Ekipman kiralama başlat (BU FONKSİYON EKSİKTİ!)
-exports.createEquipmentRental = async ({ equipmentId, durationMinutes = 60 }) => {
+exports.createEquipmentRental = async ({ userId, equipmentId, durationMinutes = 60 }) => {
     const client = await pool.connect();
 
     try {
@@ -131,9 +133,9 @@ exports.createEquipmentRental = async ({ equipmentId, durationMinutes = 60 }) =>
         // 3) Kiralama kaydı oluştur (user_id = 1 demo)
         const rentalRes = await client.query(
             `INSERT INTO equipment_rentals (user_id, equipment_id, start_at, end_at, status)
-             VALUES ($1, $2, NOW(), NOW() + ($3 || ' minutes')::interval, 'ongoing')
-             RETURNING equipment_rental_id, user_id, equipment_id, start_at, end_at, status;`,
-            [1, equipmentId, safeDuration]
+            VALUES ($1, $2, NOW(), NOW() + ($3 || ' minutes')::interval, 'ongoing')
+            RETURNING equipment_rental_id, user_id, equipment_id, start_at, end_at, status;`,
+            [userId, equipmentId, safeDuration]
         );
 
         const rental = rentalRes.rows[0];
@@ -152,41 +154,38 @@ exports.createEquipmentRental = async ({ equipmentId, durationMinutes = 60 }) =>
 };
 
 // 🔹 Ekipman kiralamayı bitir ve FİYAT HESAPLA
-exports.completeEquipmentRental = async (rentalId) => {
+exports.completeEquipmentRental = async ({ userId, rentalId }) => {
     const client = await pool.connect();
-
     try {
         await client.query('BEGIN');
 
-        // 1) Kiralamayı bitir
         const rentalRes = await client.query(
             `UPDATE equipment_rentals
-             SET status = 'completed', end_at = NOW()
-             WHERE equipment_rental_id = $1 AND status = 'ongoing'
-             RETURNING equipment_rental_id, equipment_id, start_at, end_at,
-             EXTRACT(EPOCH FROM (NOW() - start_at)) as duration_seconds;`,
-            [rentalId]
+       SET status = 'completed', end_at = NOW()
+       WHERE equipment_rental_id = $1 AND user_id = $2 AND status = 'ongoing'
+       RETURNING equipment_rental_id, equipment_id, start_at, end_at,
+       EXTRACT(EPOCH FROM (NOW() - start_at)) as duration_seconds;`,
+            [rentalId, userId]
         );
 
-        if (rentalRes.rowCount === 0) throw new Error('Devam eden kiralama bulunamadı');
+        if (rentalRes.rowCount === 0) {
+            throw new Error('Devam eden kiralama bulunamadı (veya size ait değil).');
+        }
 
         const rental = rentalRes.rows[0];
-        const durationHours = Math.ceil(rental.duration_seconds / 3600); // 1 sn bile olsa 1 saat sayar
+        const durationHours = Math.ceil(rental.duration_seconds / 3600);
 
-        // 2) Ekipmanın saatlik ücretini öğren
-        const equipRes = await client.query('SELECT price_per_hour FROM equipments WHERE equipment_id = $1', [rental.equipment_id]);
-        
-        // parseFloat ile garantiye alıyoruz
+        const equipRes = await client.query(
+            'SELECT price_per_hour FROM equipments WHERE equipment_id = $1',
+            [rental.equipment_id]
+        );
         const pricePerHour = parseFloat(equipRes.rows[0]?.price_per_hour || 10);
-        
         const totalPrice = durationHours * pricePerHour;
 
-        console.log(`--- TEKLİ İADE ---`);
-        console.log(`Süre: ${rental.duration_seconds} sn -> ${durationHours} saat`);
-        console.log(`Birim: ${pricePerHour} ₺ -> Toplam: ${totalPrice} ₺`);
-
-        // 3) Ekipmanı available yap
-        await client.query(`UPDATE equipments SET status = 'available' WHERE equipment_id = $1`, [rental.equipment_id]);
+        await client.query(
+            `UPDATE equipments SET status = 'available' WHERE equipment_id = $1`,
+            [rental.equipment_id]
+        );
 
         await client.query('COMMIT');
         return { ...rental, total_price: totalPrice, duration_hours: durationHours };
@@ -197,6 +196,7 @@ exports.completeEquipmentRental = async (rentalId) => {
         client.release();
     }
 };
+
 
 // 🔹 Kullanıcının aktif tekne kiralamalarını getir (maliyet bilgisiyle)
 exports.getMyActiveBoatRentals = async (userId) => {
@@ -290,10 +290,10 @@ exports.returnAllMyEquipment = async (userId) => {
             const start = new Date(rental.start_at).getTime();
             const end = new Date(rental.end_at).getTime();
             const durationSeconds = (end - start) / 1000;
-            
+
             // Saat hesapla (Yukarı yuvarla: 1 dk -> 1 saat)
             // Eğer dakika bazlı istersen burayı: Math.ceil(durationSeconds / 60) yapmalısın.
-            const durationHours = Math.ceil(durationSeconds / 3600); 
+            const durationHours = Math.ceil(durationSeconds / 3600);
 
             // Fiyatı Sayıya Çevir (ÖNEMLİ: String gelirse patlamasın)
             const unitPrice = parseFloat(rental.price_per_hour);

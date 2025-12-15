@@ -5,14 +5,14 @@ import { fetchAllPosts, fetchZonePosts, createPost, fetchComments, createComment
 const Forum = ({ selectedZone, currentUser }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Bölgeler Listesi
   const [zonesList, setZonesList] = useState([]);
 
   // Yeni Post State'leri
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
-  const [postZoneId, setPostZoneId] = useState(''); 
+  const [postZoneId, setPostZoneId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Yorum State'leri
@@ -21,11 +21,14 @@ const Forum = ({ selectedZone, currentUser }) => {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
 
+  const isLoggedIn = !!localStorage.getItem('token');
+
+
   // 1. Postları ve Bölgeleri Çekme
   useEffect(() => {
     const loadPosts = async () => {
       setLoading(true);
-      setExpandedPostId(null); 
+      setExpandedPostId(null);
       setComments([]);
 
       try {
@@ -52,13 +55,13 @@ const Forum = ({ selectedZone, currentUser }) => {
         const data = await fetchZones();
         // Veriyi konsola yazdıralım ki yapısını görelim (Hata ayıklama için)
         // console.log("Gelen Bölgeler:", data); 
-        
+
         if (data && Array.isArray(data)) {
-           // Bazen direkt array gelir
-           setZonesList(data);
+          // Bazen direkt array gelir
+          setZonesList(data);
         } else if (data && data.features) {
-           // Bazen GeoJSON gelir
-           setZonesList(data.features);
+          // Bazen GeoJSON gelir
+          setZonesList(data.features);
         }
       } catch (err) {
         console.error("Bölgeler listesi çekilemedi:", err);
@@ -90,28 +93,33 @@ const Forum = ({ selectedZone, currentUser }) => {
 
   // 3. Modal Açılınca
   const handleOpenModal = () => {
+    const isLoggedIn = !!localStorage.getItem('token');
+    if (!isLoggedIn) {
+      alert('Paylaşım yapmak için giriş yapmalısınız.');
+      return;
+    }
+
     const activeZoneId = selectedZone ? (selectedZone.zone_id || selectedZone.id) : '';
-    setPostZoneId(activeZoneId || ''); 
+    setPostZoneId(activeZoneId || '');
     setIsModalOpen(true);
   };
 
   // 4. Post Gönderme (Backend Hatasını Engelleyen Yer)
   const handlePostSubmit = async (e) => {
     e.preventDefault();
-    const userId = currentUser ? currentUser.user_id : 1; 
 
     // --- KRİTİK DÜZELTME ---
     // Backend'e asla String gitmemeli. Kesinlikle Integer veya Null olmalı.
     let zoneToSend = null;
 
     if (postZoneId && postZoneId !== "") {
-        // String gelen "5" değerini Sayı olan 5'e çeviriyoruz
-        const parsed = parseInt(postZoneId, 10);
-        
-        // Eğer gerçekten bir sayıysa atama yap, değilse null kalsın
-        if (!isNaN(parsed)) {
-            zoneToSend = parsed;
-        }
+      // String gelen "5" değerini Sayı olan 5'e çeviriyoruz
+      const parsed = parseInt(postZoneId, 10);
+
+      // Eğer gerçekten bir sayıysa atama yap, değilse null kalsın
+      if (!isNaN(parsed)) {
+        zoneToSend = parsed;
+      }
     }
 
     // Konsola yazdıralım ki ne gittiğini görelim
@@ -119,18 +127,17 @@ const Forum = ({ selectedZone, currentUser }) => {
 
     try {
       await createPost({
-        user_id: userId,
         title: newTitle,
         content: newContent,
         zone_id: zoneToSend, // Burası artık ya bir Sayı ya da Null. Asla "Van Gölü" yazısı değil.
         visibility: 'public'
       });
-      
+
       setNewTitle('');
       setNewContent('');
       setIsModalOpen(false);
       alert("Gönderi paylaşıldı!");
-      
+
       const currentViewId = selectedZone ? (selectedZone.zone_id || selectedZone.id) : null;
       const updated = currentViewId ? await fetchZonePosts(currentViewId) : await fetchAllPosts();
       setPosts(updated);
@@ -146,7 +153,7 @@ const Forum = ({ selectedZone, currentUser }) => {
     if (!newCommentText.trim()) return;
     const userId = currentUser ? currentUser.user_id : 1;
     try {
-      await createComment(postId, userId, newCommentText);
+      await createComment(postId, newCommentText); // burası
       setNewCommentText('');
       const updatedComments = await fetchComments(postId);
       setComments(updatedComments);
@@ -163,14 +170,20 @@ const Forum = ({ selectedZone, currentUser }) => {
 
   return (
     <div style={{ padding: '14px', color: 'white', height: '100%', overflowY: 'auto', position: 'relative' }}>
-      
+
       {/* Üst Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'sticky', top: 0, background: '#020817', paddingBottom: '12px', zIndex: 10 }}>
         <h3 style={{ color: '#00ffff', margin: 0, fontSize: '1rem', fontWeight: 'bold', textShadow: '0 0 10px #00ffff' }}>
           {selectedZone ? `📍 ${selectedZone.name} Forumu` : "🌐 Genel Balıkçı Forumu"}
         </h3>
-        <button 
-          onClick={handleOpenModal}
+        <button
+          onClick={() => {
+            if (!isLoggedIn) {
+              alert('Paylaşım yapmak için giriş yapmalısınız.');
+              return;
+            }
+            handleOpenModal();
+          }}
           style={{ padding: '6px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.85rem' }}
         >
           + Paylaş
@@ -183,7 +196,7 @@ const Forum = ({ selectedZone, currentUser }) => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '40px' }}>
           {posts.length === 0 && <p style={{ color: '#ccc', textAlign: 'center' }}>Burada henüz ses yok.</p>}
-          
+
           {posts.map((post) => (
             <div key={post.post_id} style={{ background: 'rgba(0, 255, 255, 0.05)', border: '1px solid #00ffff33', borderRadius: 6, padding: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -191,7 +204,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                 <span style={{ fontSize: '0.75rem', color: '#888' }}>{new Date(post.created_at).toLocaleDateString()}</span>
               </div>
               <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '12px' }}>{post.content}</p>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #00ffff22', paddingTop: '8px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.8rem', color: '#00ffff' }}>👤 {post.author || "Anonim"}</span>
@@ -199,7 +212,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                     <span style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>📍 {post.zone_name}</span>
                   )}
                 </div>
-                <button 
+                <button
                   onClick={() => toggleComments(post.post_id)}
                   style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}
                 >
@@ -221,7 +234,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                           <div key={comment.comment_id} style={{ borderBottom: '1px solid #333', paddingBottom: '6px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ fontSize: '0.75rem', color: '#00ffff', fontWeight: 'bold' }}>{comment.author}</span>
-                              <span style={{ fontSize: '0.7rem', color: '#555' }}>{new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                              <span style={{ fontSize: '0.7rem', color: '#555' }}>{new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <p style={{ fontSize: '0.85rem', color: '#ddd', margin: '4px 0 0 0' }}>{comment.content}</p>
                           </div>
@@ -229,13 +242,24 @@ const Forum = ({ selectedZone, currentUser }) => {
                       )}
                     </div>
                   )}
-                  <form onSubmit={(e) => handleCommentSubmit(e, post.post_id)} style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type="text" placeholder="Yorum yaz..." value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)}
-                      style={{ flex: 1, background: '#1a202c', border: '1px solid #444', color: 'white', borderRadius: '4px', padding: '6px', fontSize: '0.85rem', outline: 'none' }}
-                    />
-                    <button type="submit" style={{ background: '#22c55e', border: 'none', borderRadius: '4px', padding: '0 10px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>➜</button>
-                  </form>
+                  {isLoggedIn ? (
+                    <form onSubmit={(e) => handleCommentSubmit(e, post.post_id)} style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Yorum yaz..."
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        style={{ flex: 1, background: '#1a202c', border: '1px solid #444', color: 'white', borderRadius: '4px', padding: '6px', fontSize: '0.85rem', outline: 'none' }}
+                      />
+                      <button type="submit" style={{ background: '#22c55e', border: 'none', borderRadius: '4px', padding: '0 10px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>
+                        ➜
+                      </button>
+                    </form>
+                  ) : (
+                    <p style={{ fontSize: '0.8rem', color: '#888' }}>
+                      Yorum yapmak için giriş yapmalısınız.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -249,30 +273,30 @@ const Forum = ({ selectedZone, currentUser }) => {
           <div style={{ background: '#020817', padding: '20px', borderRadius: '8px', border: '1px solid #00ffff', width: '90%', maxWidth: '400px', boxShadow: '0 0 20px rgba(0,255,255,0.2)' }}>
             <h3 style={{ color: '#00ffff', marginTop: 0, marginBottom: '16px' }}>Yeni Paylaşım</h3>
             <form onSubmit={handlePostSubmit}>
-              <input 
-                type="text" placeholder="Başlık" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required 
+              <input
+                type="text" placeholder="Başlık" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required
                 style={{ width: '100%', padding: '10px', marginBottom: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none' }}
               />
-              <textarea 
+              <textarea
                 placeholder="İçerik" value={newContent} onChange={(e) => setNewContent(e.target.value)} required rows="4"
                 style={{ width: '100%', padding: '10px', marginBottom: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', resize: 'none' }}
               />
-              
+
               {/* SELECT KUTUSU - Sorun Çözüldü */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '6px' }}>Konum:</label>
-                <select 
-                  value={postZoneId} 
+                <select
+                  value={postZoneId}
                   onChange={(e) => setPostZoneId(e.target.value)}
                   style={{ width: '100%', padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', cursor: 'pointer' }}
                 >
                   <option value="">🌐 Genel (Konumsuz)</option>
-                  
+
                   {zonesList.map((zone, index) => {
                     // ID'yi her neredeyse bulup çıkarıyoruz
                     const zId = zone.properties?.zone_id || zone.properties?.id || zone.id;
                     const zName = zone.properties?.name || zone.name || "Bilinmeyen Bölge";
-                    
+
                     // Eğer ID yoksa bu seçeneği listelemeyelim (Güvenlik)
                     if (!zId) return null;
 
@@ -282,7 +306,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                       </option>
                     );
                   })}
-                  
+
                 </select>
               </div>
 

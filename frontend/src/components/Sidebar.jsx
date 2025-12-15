@@ -1,6 +1,8 @@
 // frontend/src/components/Sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import Forum from './Forum';
+import { loginUser, registerUser, fetchMe } from '../api/api';
+
 import {
   fetchAvailableBoats,
   createBoatRental,
@@ -32,7 +34,7 @@ const ACCOUNT_SUBTABS = {
   POSTS: 'posts',
 };
 
-const Sidebar = ({ selectedZone, currentUser }) => {
+const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
   const [activeTab, setActiveTab] = useState(TABS.INFO);
 
   // 🔹 Tekne sekmesi için state'ler (AYNEN KORUNDU)
@@ -50,13 +52,13 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   const [equipmentActionMessage, setEquipmentActionMessage] = useState('');
 
   // 🔹 Account tab için state'ler
-  const [accountSubtab, setAccountSubtab] = useState(ACCOUNT_SUBTABS.LOGIN);
+  const [accountSubtab, setAccountSubtab] = useState(ACCOUNT_SUBTABS.RENTALS);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Şimdilik currentUser'dan kontrol edilecek
   const [userInfo, setUserInfo] = useState(null);
   const [myActiveRentals, setMyActiveRentals] = useState({ boats: [], equipment: [] });
   const [myPosts, setMyPosts] = useState([]);
   const [accountLoading, setAccountLoading] = useState(false);
-  
+
   // Login form state'leri
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -65,26 +67,41 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   const [activities, setActivities] = useState({ past: [], current: [], upcoming: [] });
   const [activitiesLoading, setActivitiesLoading] = useState(false);
 
+  const hasToken = !!localStorage.getItem('token');
+
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [registerName, setRegisterName] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
+
+
+
   // BOAT tab aktif olduğunda müsait tekneleri VE benim aktif kiralamamı yükle
   useEffect(() => {
     if (activeTab !== TABS.BOAT) return;
 
+    const hasToken = !!localStorage.getItem('token'); // en net kontrol
+
     const loadBoatsData = async () => {
       setBoatsLoading(true);
       setBoatsError(null);
+
       try {
-        // 1. Müsait Tekneleri Çek
+        // 1) Her durumda tekneleri listele (public)
         const availableData = await fetchAvailableBoats();
         setAvailableBoats(availableData);
-        const userId = currentUser?.user_id || 1; 
 
-        const myRentals = await fetchMyActiveBoatRentals(userId);
-        
-        if (myRentals && myRentals.length > 0) {
-          setActiveRental(myRentals[0]);
-        } else {
+        // 2) Login yoksa my-active çağırma
+        const token = localStorage.getItem('token');
+        if (!token) {
           setActiveRental(null);
+          return;
         }
+
+        // 3) Login varsa aktif kiralamayı çek
+        const myRentals = await fetchMyActiveBoatRentals();
+
+        if (myRentals && myRentals.length > 0) setActiveRental(myRentals[0]);
+        else setActiveRental(null);
 
       } catch (err) {
         console.error(err);
@@ -94,6 +111,8 @@ const Sidebar = ({ selectedZone, currentUser }) => {
       }
     };
 
+
+
     loadBoatsData();
   }, [activeTab, currentUser]); // currentUser değişirse de tetiklensin
 
@@ -101,15 +120,25 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   useEffect(() => {
     if (activeTab !== TABS.EQUIP) return;
 
+    const hasToken = !!localStorage.getItem('token');
+
     const loadEquipmentData = async () => {
       setEquipmentLoading(true);
       setEquipmentError(null);
+
       try {
-        // 1. Müsait Olanları Çek
+        // 1) Her durumda ekipmanları listele (public)
         const availData = await fetchAvailableEquipment();
         setAvailableEquipment(availData);
 
-        // 2. Benim Kiraladıklarımı Çek
+        // 2) Login yoksa "Sepetim" kısmını boş göster
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setMyRentals([]);
+          return;
+        }
+
+        // 3) Login varsa kiraladıklarımı çek
         const myData = await fetchMyActiveEquipment();
         setMyRentals(myData);
 
@@ -121,16 +150,23 @@ const Sidebar = ({ selectedZone, currentUser }) => {
       }
     };
 
+
     loadEquipmentData();
   }, [activeTab]);
 
   // Account tab aktif olduğunda verileri yükle
   useEffect(() => {
     if (activeTab !== TABS.ACCOUNT) return;
-    
+
     // currentUser varsa giriş yapılmış sayılır (şimdilik)
     if (currentUser && currentUser.user_id) {
       setIsLoggedIn(true);
+
+      // Refresh sonrası LOGIN'de kalmışsa veya ilk girişse RENTALS aç
+      setAccountSubtab((prev) =>
+        prev === ACCOUNT_SUBTABS.LOGIN ? ACCOUNT_SUBTABS.RENTALS : prev
+      );
+
       loadAccountData();
     } else {
       setIsLoggedIn(false);
@@ -167,17 +203,17 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   // Account verilerini yükle
   const loadAccountData = async () => {
     if (!currentUser || !currentUser.user_id) return;
-    
+
     setAccountLoading(true);
     try {
       // Paralel olarak tüm verileri çek
       const [userData, boatRentals, equipmentRentals, posts] = await Promise.all([
         fetchUserInfo(currentUser.user_id).catch(() => null),
-        fetchMyActiveBoatRentals(currentUser.user_id).catch(() => []),
+        fetchMyActiveBoatRentals().catch(() => []),
         fetchMyActiveEquipment().catch(() => []),
-        fetchMyPosts(currentUser.user_id).catch(() => []),
+        fetchMyPosts().catch(() => []), //burası
       ]);
-      
+
       setUserInfo(userData);
       setMyActiveRentals({ boats: boatRentals || [], equipment: equipmentRentals || [] });
       setMyPosts(posts || []);
@@ -189,18 +225,43 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   };
 
   // Login handler (şimdilik basit, sonra API'ye bağlanacak)
-  const handleLogin = async (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    // TODO: API çağrısı yapılacak
-    // Şimdilik demo için currentUser varsa giriş yapılmış sayılır
-    if (currentUser && currentUser.user_id) {
+
+    try {
+      let result;
+
+      if (authMode === 'login') {
+        result = await loginUser(loginEmail, loginPassword);
+      } else {
+        result = await registerUser(
+          registerName,
+          loginEmail,
+          loginPassword,
+          registerPhone
+        );
+      }
+
+      // App.jsx’e haber ver
+      onLoginSuccess?.(result.token, result.user);
+
+      // UI state
       setIsLoggedIn(true);
       setAccountSubtab(ACCOUNT_SUBTABS.PROFILE);
-      loadAccountData();
-    } else {
-      alert('Giriş yapılamadı. Demo modunda user_id: 1 kullanılıyor.');
+
+      // Formları temizle
+      setLoginEmail('');
+      setLoginPassword('');
+      setRegisterName('');
+      setRegisterPhone('');
+      setAuthMode('login');
+
+    } catch (err) {
+      alert(err.message || 'İşlem başarısız');
     }
   };
+
+
 
   // Logout handler
   const handleLogout = () => {
@@ -209,6 +270,7 @@ const Sidebar = ({ selectedZone, currentUser }) => {
     setMyActiveRentals({ boats: [], equipment: [] });
     setMyPosts([]);
     setAccountSubtab(ACCOUNT_SUBTABS.LOGIN);
+    onLogout?.();
   };
 
   // Anlık maliyet hesaplama fonksiyonu
@@ -239,7 +301,7 @@ const Sidebar = ({ selectedZone, currentUser }) => {
     try {
       setActionMessage('');
       const result = await completeBoatRental(activeRental.rental_id);
-      
+
       // ÜCRETİ GÖSTEREN KISIM
       const msg = `İade alındı. Süre: ${result.duration_hours} saat. Tutar: ${result.total_price} ₺`;
       alert(msg); // Ekrana popup çıkar
@@ -250,7 +312,7 @@ const Sidebar = ({ selectedZone, currentUser }) => {
     } catch (err) {
       setActionMessage(err.message || 'Hata oluştu.');
     }
-};
+  };
 
   // EKİPMAN FONKSİYONLARI (GÜNCELLENDİ - ÇOKLU KİRALAMA)
   const handleRentEquipment = async (equipmentId) => {
@@ -283,16 +345,16 @@ const Sidebar = ({ selectedZone, currentUser }) => {
     } catch (err) {
       setEquipmentActionMessage(err.message || 'İade hatası.');
     }
-};
+  };
 
-// TOPLU İADE FONKSİYONU
+  // TOPLU İADE FONKSİYONU
   const handleReturnAll = async () => {
     if (!window.confirm("Tüm ekipmanları iade etmek istediğinize emin misiniz?")) return;
 
     try {
       setEquipmentActionMessage('');
       const result = await returnAllEquipment(); // api.js'den import etmeyi unutma!
-      
+
       if (result.count > 0) {
         alert(`TOPLU İADE BAŞARILI!\n\nİade Edilen Parça: ${result.count} adet\nToplam Tutar: ${result.total_price} ₺`);
         setEquipmentActionMessage(`Hepsi iade edildi. Tutar: ${result.total_price} ₺`);
@@ -313,9 +375,9 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   // Tarih formatlama fonksiyonu
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', { 
-      year: 'numeric', 
-      month: 'long', 
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -332,7 +394,7 @@ const Sidebar = ({ selectedZone, currentUser }) => {
           Van Gölü Balıkçılık İşletmesi
         </h2>
         <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.6 }}>
-          {selectedZone 
+          {selectedZone
             ? `Şu an "${selectedZone.name}" bölgesini inceliyorsunuz. Bu bölgedeki avlanma kurallarına dikkat ediniz.`
             : "Türkiye'nin en büyük sodalı gölü olan Van Gölü üzerinde güvenli ve kontrollü balıkçılık deneyimi sunuyoruz."
           }
@@ -349,7 +411,7 @@ const Sidebar = ({ selectedZone, currentUser }) => {
             <h3 style={{ color: '#00ffff', marginTop: 0, marginBottom: '10px', fontSize: '1rem' }}>
               📅 Bölge Etkinlikleri
             </h3>
-            
+
             {activitiesLoading ? (
               <p style={{ fontSize: '0.85rem', color: '#888' }}>Etkinlikler yükleniyor…</p>
             ) : !hasActivities ? (
@@ -467,7 +529,13 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   const renderBoatTab = () => (
     <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <h3 style={{ color: '#00ffff', marginTop: 0 }}>🛶 Tekne Kiralama</h3>
-      <p style={{ fontSize: '0.9rem', color: '#ccc' }}>Demo modunda, giriş yapmadan tekne kiralayabilirsiniz.</p>
+      {!hasToken && (
+        <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '-4px' }}>
+          Tekne kiralamak için giriş yapmalısınız.
+        </p>
+      )}
+      <h4 style={{ color: '#ccc', margin: '0 0 8px 0', fontSize: '0.9rem' }}>🛳️ Müsait Tekneler </h4>
+
 
       {boatsLoading && <p style={{ fontSize: '0.85rem', color: '#888' }}>Tekneler yükleniyor…</p>}
       {boatsError && <p style={{ fontSize: '0.85rem', color: '#f97373' }}>{boatsError}</p>}
@@ -480,9 +548,14 @@ const Sidebar = ({ selectedZone, currentUser }) => {
                 <strong>{boat.name}</strong><br />
                 Kapasite: {boat.capacity} kişi - {boat.price_per_hour} ₺/saat
               </div>
-              <button style={{ padding: '8px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.8rem' }} disabled={!!activeRental} onClick={() => handleRentBoat(boat.boat_id)}>
+              <button
+                style={{ padding: '8px 10px', borderRadius: 6, border: 'none', cursor: hasToken ? 'pointer' : 'not-allowed', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.8rem', opacity: hasToken ? 1 : 0.5 }}
+                disabled={!hasToken || !!activeRental}
+                onClick={() => handleRentBoat(boat.boat_id)}
+              >
                 Kirala
               </button>
+
             </div>
           ))}
         </div>
@@ -505,21 +578,21 @@ const Sidebar = ({ selectedZone, currentUser }) => {
   const renderEquipTab = () => (
     <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
       <h3 style={{ color: '#00ffff', marginTop: 0 }}>🎣 Ekipman Kiralama</h3>
-      
+
       {equipmentLoading && <p style={{ fontSize: '0.85rem', color: '#888' }}>Yükleniyor…</p>}
       {equipmentError && <p style={{ fontSize: '0.85rem', color: '#f97373' }}>{equipmentError}</p>}
       {equipmentActionMessage && <p style={{ fontSize: '0.8rem', color: '#a5b4fc' }}>{equipmentActionMessage}</p>}
 
       {/* 1. BÖLÜM: ELİMDEKİLER (Sepetim) */}
-      {myRentals.length > 0 && (
+      {hasToken && myRentals.length > 0 && (
         <div style={{ borderBottom: '1px solid #333', paddingBottom: 15 }}>
-          
+
           {/* Başlık ve Butonu Yan Yana Koyduk */}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <h4 style={{ color: '#22c55e', margin: 0, fontSize: '0.9rem' }}>✅ Elimdekiler ({myRentals.length})</h4>
-            <button 
+            <button
               onClick={handleReturnAll}
-              style={{ background:'#dc2626', color:'white', border:'none', borderRadius:4, padding:'4px 8px', fontSize:'0.7rem', cursor:'pointer', fontWeight:'bold' }}
+              style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 'bold' }}
             >
               Hepsini İade Et
             </button>
@@ -528,16 +601,16 @@ const Sidebar = ({ selectedZone, currentUser }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* ... map döngüsü aynı kalacak ... */}
             {myRentals.map((rental) => (
-              <div key={rental.equipment_rental_id} style={{ 
+              <div key={rental.equipment_rental_id} style={{
                 background: 'rgba(34, 197, 94, 0.1)', // Yeşil arka plan
-                border: '1px solid rgba(34, 197, 94, 0.3)', 
-                borderRadius: 6, padding: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' 
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                borderRadius: 6, padding: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem'
               }}>
                 <div>
-                  <strong>{rental.type_name || 'Ekipman'}</strong><br/>
+                  <strong>{rental.type_name || 'Ekipman'}</strong><br />
                   <span style={{ fontSize: '0.75rem', color: '#ccc' }}>{rental.brand} {rental.model}</span>
                 </div>
-                <button 
+                <button
                   onClick={() => handleReturnEquipment(rental.equipment_rental_id)}
                   style={{ background: '#22c55e', color: 'white', border: 'none', padding: '5px 10px', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
                 >
@@ -551,18 +624,23 @@ const Sidebar = ({ selectedZone, currentUser }) => {
 
       {/* 2. BÖLÜM: MÜSAİT OLANLAR */}
       <div>
+        {!hasToken && (
+          <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '-4px' }}>
+            Ekipman kiralamak için giriş yapmalısınız.
+          </p>
+        )}
         <h4 style={{ color: '#ccc', margin: '0 0 8px 0', fontSize: '0.9rem' }}>🛒 Müsait Ekipmanlar</h4>
-        
+
         {!equipmentLoading && availableEquipment.length === 0 && (
-           <p style={{ fontSize: '0.85rem', color: '#666' }}>Müsait ekipman yok.</p>
+          <p style={{ fontSize: '0.85rem', color: '#666' }}>Müsait ekipman yok.</p>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {availableEquipment.map((equipment) => (
-            <div key={equipment.equipment_id} style={{ 
+            <div key={equipment.equipment_id} style={{
               background: 'rgba(0, 255, 255, 0.05)', // Senin orijinal mavi arka planın
-              border: '1px solid #00ffff33', 
-              borderRadius: 6, padding: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' 
+              border: '1px solid #00ffff33',
+              borderRadius: 6, padding: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem'
             }}>
               <div>
                 <strong>{equipment.brand} {equipment.model}</strong>
@@ -570,7 +648,8 @@ const Sidebar = ({ selectedZone, currentUser }) => {
                 <br />{equipment.price_per_hour} ₺/saat
               </div>
               <button
-                style={{ padding: '8px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.8rem' }}
+                style={{ padding: '8px 10px', borderRadius: 6, border: 'none', cursor: hasToken ? 'pointer' : 'not-allowed', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.8rem', opacity: hasToken ? 1 : 0.5 }}
+                disabled={!hasToken}
                 onClick={() => handleRentEquipment(equipment.equipment_id)}
               >
                 Kirala
@@ -584,7 +663,7 @@ const Sidebar = ({ selectedZone, currentUser }) => {
 
   const renderForumTab = () => (
     <div style={{ marginTop: '10px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-       <Forum selectedZone={selectedZone} currentUser={currentUser} />
+      <Forum selectedZone={selectedZone} currentUser={currentUser} />
     </div>
   );
 
@@ -595,7 +674,26 @@ const Sidebar = ({ selectedZone, currentUser }) => {
       return (
         <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <h3 style={{ color: '#00ffff', marginTop: 0 }}>🔐 Giriş Yap</h3>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {authMode === 'register' && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Ad Soyad"
+                  value={registerName}
+                  onChange={(e) => setRegisterName(e.target.value)}
+                  required
+                  style={{ padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Telefon (opsiyonel)"
+                  value={registerPhone}
+                  onChange={(e) => setRegisterPhone(e.target.value)}
+                  style={{ padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px' }}
+                />
+              </>
+            )}
             <input
               type="email"
               placeholder="E-posta"
@@ -616,11 +714,25 @@ const Sidebar = ({ selectedZone, currentUser }) => {
               type="submit"
               style={{ padding: '10px', background: '#00ffff', color: '#00111f', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
             >
-              Giriş Yap
+              {authMode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
             </button>
           </form>
           <p style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center' }}>
-            Hesabınız yok mu? <a href="#" style={{ color: '#00ffff' }}>Kayıt Ol</a>
+            {authMode === 'login' ? (
+              <>
+                Hesabınız yok mu?{' '}
+                <a href="#" onClick={(e) => { e.preventDefault(); setAuthMode('register'); }} style={{ color: '#00ffff' }}>
+                  Kayıt Ol
+                </a>
+              </>
+            ) : (
+              <>
+                Zaten hesabınız var mı?{' '}
+                <a href="#" onClick={(e) => { e.preventDefault(); setAuthMode('login'); }} style={{ color: '#00ffff' }}>
+                  Giriş Yap
+                </a>
+              </>
+            )}
           </p>
         </div>
       );
@@ -631,21 +743,6 @@ const Sidebar = ({ selectedZone, currentUser }) => {
       <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
         {/* Alt Tab Butonları */}
         <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #123', paddingBottom: '4px', marginBottom: '10px' }}>
-          <button
-            onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.PROFILE)}
-            style={{
-              flex: 1,
-              padding: '6px',
-              fontSize: '0.75rem',
-              border: 'none',
-              cursor: 'pointer',
-              background: accountSubtab === ACCOUNT_SUBTABS.PROFILE ? '#00ffff' : 'transparent',
-              color: accountSubtab === ACCOUNT_SUBTABS.PROFILE ? '#00111f' : '#9aa4b1',
-              fontWeight: accountSubtab === ACCOUNT_SUBTABS.PROFILE ? 'bold' : 'normal',
-            }}
-          >
-            Profil
-          </button>
           <button
             onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.RENTALS)}
             style={{
@@ -675,6 +772,21 @@ const Sidebar = ({ selectedZone, currentUser }) => {
             }}
           >
             Postlarım
+          </button>
+          <button
+            onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.PROFILE)}
+            style={{
+              flex: 1,
+              padding: '6px',
+              fontSize: '0.75rem',
+              border: 'none',
+              cursor: 'pointer',
+              background: accountSubtab === ACCOUNT_SUBTABS.PROFILE ? '#00ffff' : 'transparent',
+              color: accountSubtab === ACCOUNT_SUBTABS.PROFILE ? '#00111f' : '#9aa4b1',
+              fontWeight: accountSubtab === ACCOUNT_SUBTABS.PROFILE ? 'bold' : 'normal',
+            }}
+          >
+            Profil
           </button>
         </div>
 
@@ -898,7 +1010,19 @@ const Sidebar = ({ selectedZone, currentUser }) => {
         <button style={tabButtonStyle(TABS.BOAT)} onClick={() => setActiveTab(TABS.BOAT)}>Tekne</button>
         <button style={tabButtonStyle(TABS.EQUIP)} onClick={() => setActiveTab(TABS.EQUIP)}>Ekipman</button>
         <button style={tabButtonStyle(TABS.FORUM)} onClick={() => setActiveTab(TABS.FORUM)}>Forum</button>
-        <button style={tabButtonStyle(TABS.ACCOUNT)} onClick={() => setActiveTab(TABS.ACCOUNT)}>Giriş</button>
+        <button
+          style={tabButtonStyle(TABS.ACCOUNT)}
+          onClick={() => {
+            setActiveTab(TABS.ACCOUNT);
+            if (localStorage.getItem('token')) {
+              setAccountSubtab(ACCOUNT_SUBTABS.RENTALS);
+            } else {
+              setAccountSubtab(ACCOUNT_SUBTABS.LOGIN);
+            }
+          }}
+        >
+          {currentUser ? 'Hesabım' : 'Giriş'}
+        </button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>

@@ -68,10 +68,10 @@ function MapBackgroundClick({ onDeselect }) {
 // --- ANA BİLEŞEN ---
 const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyoruz
   const [lakeData, setLakeData] = useState(null);
-  const [hotspots, setHotspots] = useState([]);      
-  const [fishPos, setFishPos] = useState([38.60, 42.90]); 
+  const [hotspots, setHotspots] = useState([]);
+  const [fishPos, setFishPos] = useState([38.60, 42.90]);
   const lakePolygonRef = useRef(null);
-  const [boats, setBoats] = useState([]);       
+  const [boats, setBoats] = useState([]);
 
   // 🔹 1) ZONE VERİSİNİ YÜKLE
   useEffect(() => {
@@ -142,7 +142,7 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
   // --- KRİTİK NOKTA: TIKLAMA MANTIĞI BURADA ---
   const onEachFeature = (feature, layer) => {
     const name = feature.properties.name || 'Bölge';
-    
+
     // Popup içeriği
     layer.bindPopup(`
       <strong>${name}</strong><br/>
@@ -154,7 +154,7 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
       click: (e) => {
         // 1. Haritanın "arkaplan" tıklamasını engelle (Yoksa hem seçer hem iptal eder)
         L.DomEvent.stopPropagation(e);
-        
+
         // 2. App.jsx'e seçilen bölgeyi gönder
         console.log("Seçilen Bölge:", feature.properties);
         onZoneSelect(feature.properties);
@@ -175,9 +175,9 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
 
       {/* Bölge Katmanı */}
       {lakeData && (
-        <GeoJSON 
-          data={lakeData} 
-          style={getStyle} 
+        <GeoJSON
+          data={lakeData}
+          style={getStyle}
           onEachFeature={onEachFeature} // Tıklama mantığı buraya bağlandı
         />
       )}

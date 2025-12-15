@@ -26,16 +26,26 @@ exports.getPostsByZone = async (req, res, next) => {
 };
 
 // 3. Post Oluştur
-exports.createPost = async (req, res, next) => {
+exports.createPost = async (req, res) => {
   try {
-    // req.body içindeki verileri Service'e gönderiyoruz
-    const newPost = await ForumService.createPost(req.body);
+    const userId = req.user.user_id;
+    const { title, content, zone_id, visibility } = req.body;
+
+    const newPost = await ForumService.createPost({
+      userId,
+      title,
+      content,
+      zone_id,
+      visibility,
+    });
+
     res.status(201).json(newPost);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Post oluşturulamadı' });
   }
 };
+
 
 // 4. Yorumları Getir
 exports.getComments = async (req, res, next) => {
@@ -50,11 +60,13 @@ exports.getComments = async (req, res, next) => {
 };
 
 // 5. Yorum Yap
-exports.addComment = async (req, res, next) => {
+exports.addComment = async (req, res) => {
   const { postId } = req.params;
-  const { user_id, content } = req.body;
   try {
-    const newComment = await ForumService.addComment(postId, user_id, content);
+    const userId = req.user.user_id;
+    const { content } = req.body;
+
+    const newComment = await ForumService.addComment(postId, userId, content);
     res.status(201).json(newComment);
   } catch (err) {
     console.error(err);
@@ -62,15 +74,11 @@ exports.addComment = async (req, res, next) => {
   }
 };
 
-// 6. Kullanıcının kendi postlarını getir
-exports.getMyPosts = async (req, res, next) => {
-  const userId = req.query.userId ? parseInt(req.query.userId, 10) : null;
-  
-  if (!userId || Number.isNaN(userId)) {
-    return res.status(400).json({ error: 'Geçersiz kullanıcı ID' });
-  }
 
+// 6. Kullanıcının kendi postlarını getir
+exports.getMyPosts = async (req, res) => {
   try {
+    const userId = req.user.user_id;
     const posts = await ForumService.getMyPosts(userId);
     res.json(posts);
   } catch (err) {

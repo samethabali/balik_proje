@@ -26,6 +26,10 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// AuthGuard için:
+const authRoutes = require('./routes/authRoutes');
+
+
 // --- AYARLAR VE MIDDLEWARE ---
 
 // CORS: Frontend'in (React - 5173) Backend'e (3000) erişmesine izin ver
@@ -49,6 +53,8 @@ app.use('/api/equipments', equipmentsRoutes);
 app.use('/api/forum', forumRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/activities', activitiesRoutes);
+app.use('/api/auth', authRoutes);
+
 
 
 // Sağlık Kontrolü (Health Check) - Tarayıcıdan http://localhost:3000 yazınca bu çıkar

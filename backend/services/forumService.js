@@ -2,7 +2,7 @@
 const pool = require('../config/db'); // Veritabanı bağlantısı
 
 class ForumService {
-  
+
   // 1. Tüm Postları Çek
   static async getAllPosts() {
     const query = `
@@ -35,17 +35,22 @@ class ForumService {
   }
 
   // 3. Post Oluştur
-  static async createPost(data) {
-    const { user_id, title, content, zone_id, visibility } = data;
+  static async createPost({ userId, title, content, zone_id, visibility }) {
     const query = `
-      INSERT INTO posts (user_id, title, content, zone_id, visibility)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `;
-    // Varsayılan olarak 'public' atıyoruz
-    const { rows } = await pool.query(query, [user_id, title, content, zone_id, visibility || 'public']);
+    INSERT INTO posts (user_id, title, content, zone_id, visibility)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *
+  `;
+    const { rows } = await pool.query(query, [
+      userId,
+      title,
+      content,
+      zone_id,
+      visibility || 'public',
+    ]);
     return rows[0];
   }
+
 
   // 4. Yorumları Getir
   static async getComments(postId) {

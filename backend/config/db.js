@@ -3,14 +3,17 @@ require('dotenv').config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('supabase.co')
+    ? { rejectUnauthorized: false }
+    : false,
 });
-ssl: {
-    rejectUnauthorized: false // <--- BU SATIR ÇOK ÖNEMLİ (Port 5432 için)
-  }
 
 // Bağlantıyı test edelim
 pool.connect()
-  .then(() => console.log('✅ PostgreSQL Veritabanına Bağlanıldı (Klasik SQL Modu)'))
+  .then((client) => {
+    console.log('✅ PostgreSQL Veritabanına Bağlanıldı (Klasik SQL Modu)');
+    client.release();
+  })
   .catch(err => console.error('❌ Bağlantı Hatası', err.stack));
 
 module.exports = pool;

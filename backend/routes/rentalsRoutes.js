@@ -1,6 +1,8 @@
 // backend/routes/rentalsRoutes.js
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware');
+
 const {
     createBoatRental,
     completeBoatRental,
@@ -12,30 +14,28 @@ const {
 } = require('../controllers/rentalsController');
 
 // Tekne kiralama başlat
-router.post('/boat', createBoatRental);
+router.post('/boat', authMiddleware, createBoatRental);
 
 // Kullanıcının aktif tekne kiralamalarını getir
-router.get('/boat/my-active', getMyActiveBoatRentals);
+router.get('/boat/my-active', authMiddleware, getMyActiveBoatRentals);
 
 // --- YENİ EKLENEN ROTA ---
 // Kullanıcının üzerindeki ekipmanları getir
-router.get('/equipment/my-active', getMyActiveEquipmentRentals); 
+router.get('/equipment/my-active', authMiddleware, getMyActiveEquipmentRentals);
 
 // Ekipman kiralama başlat
-router.post('/equipment', createEquipmentRental);
+router.post('/equipment', authMiddleware, createEquipmentRental);
 
-router.get('/equipment/my-active', getMyActiveEquipmentRentals); 
 
 // YENİ EKLENEN ROTA: Toplu İade
 // (Controller'dan import etmeyi UNUTMA: returnAllEquipment)
-router.post('/equipment/return-all', returnAllEquipment); 
+router.post('/equipment/return-all', authMiddleware, returnAllEquipment);
 
-router.post('/equipment', createEquipmentRental);
 
 // Ekipman kiralamayı bitir
-router.post('/equipment/:id/complete', completeEquipmentRental);
+router.post('/equipment/:id/complete', authMiddleware, completeEquipmentRental);
 
 // Tekne kiralamayı bitir
-router.post('/:id/complete', completeBoatRental);
+router.post('/:id/complete', authMiddleware, completeBoatRental);
 
 module.exports = router;

@@ -1,6 +1,5 @@
 // frontend/src/api/api.js
 
-// 1. TEK BİR ANA ADRES TANIMLIYORUZ
 const BASE_URL = 'http://localhost:3000/api';
 
 const getToken = () => localStorage.getItem('token');
@@ -10,274 +9,23 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// --- HARİTA VE TEKNE FONKSİYONLARI (Zaten Çalışanlar) ---
-
-export const fetchZones = async () => {
-  const response = await fetch(`${BASE_URL}/zones`);
-  if (!response.ok) throw new Error('Bölgeler çekilemedi');
-  return response.json();
-};
-
-export const fetchHotspots = async () => {
-  const response = await fetch(`${BASE_URL}/hotspots`);
-  if (!response.ok) throw new Error('Hotspots çekilemedi');
-  return response.json();
-};
-
-export const fetchActiveBoats = async () => {
-  const response = await fetch(`${BASE_URL}/boats/active`);
-  if (!response.ok) throw new Error('Aktif tekneler çekilemedi');
-  return response.json();
-};
-
-export const fetchAvailableBoats = async () => {
-  const response = await fetch(`${BASE_URL}/boats/available`);
-  if (!response.ok) throw new Error('Müsait tekneler çekilemedi');
-  return response.json();
-};
-
-export const createBoatRental = async (boatId, durationMinutes = 60) => {
-  const response = await fetch(`${BASE_URL}/rentals/boat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ boatId, durationMinutes }),
-  });
-
+// Yardımcı Fonksiyon: Hata Yakalama (En üstte tanımlı, her yerden erişilebilir)
+const handleResponse = async (response) => {
   if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Tekne kiralanamadı');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Bir hata oluştu');
   }
   return response.json();
 };
 
-export const completeBoatRental = async (rentalId) => {
-  const response = await fetch(`${BASE_URL}/rentals/${rentalId}/complete`, {
-    method: 'POST',
-    headers: { ...authHeaders() },
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Kiralama tamamlanamadı');
-  }
-  return response.json();
-};
-
-// --- EKİPMAN KİRALAMA FONKSİYONLARI ---
-
-export const fetchAvailableEquipment = async () => {
-  const response = await fetch(`${BASE_URL}/equipments/available`);
-  if (!response.ok) throw new Error('Müsait ekipmanlar çekilemedi');
-  return response.json();
-};
-
-export const createEquipmentRental = async (equipmentId, durationMinutes = 60) => {
-  const response = await fetch(`${BASE_URL}/rentals/equipment`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ equipmentId, durationMinutes }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Ekipman kiralanamadı');
-  }
-  return response.json();
-};
-
-export const completeEquipmentRental = async (rentalId) => {
-  const response = await fetch(`${BASE_URL}/rentals/equipment/${rentalId}/complete`, {
-    method: 'POST',
-    headers: { ...authHeaders() },
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Kiralama tamamlanamadı');
-  }
-  return response.json();
-};
-
-export const returnAllEquipment = async () => {
-  const response = await fetch(`${BASE_URL}/rentals/equipment/return-all`, {
-    method: 'POST',
-    headers: { ...authHeaders() },
-  });
-  if (!response.ok) throw new Error('Toplu iade işlemi başarısız');
-  return response.json();
-};
-
-// --- FORUM FONKSİYONLARI (DÜZELTİLEN KISIM) ---
-// Hata: Eski kodda 'request' fonksiyonu ve 'API_BASE' değişkeni yoktu.
-// Düzeltme: Hepsini 'fetch' ve 'BASE_URL' yapısına çevirdim.
-
-// 1. Tüm postları getir
-export const fetchAllPosts = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/forum/posts`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn("Forum postları çekilemedi:", error);
-    return [];
-  }
-};
-
-// 2. Belirli bir bölgenin postlarını getir
-export const fetchZonePosts = async (zoneId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/forum/zone/${zoneId}`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn(`Zone ${zoneId} postları çekilemedi:`, error);
-    return [];
-  }
-};
-
-// 3. Yeni post oluştur
-export const createPost = async (postData) => {
-  const response = await fetch(`${BASE_URL}/forum/posts`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(postData), // user_id yok!
-  });
-
-  if (!response.ok) throw new Error('Post atılamadı');
-  return response.json();
-};
-
-// 4. Yorumları getir
-export const fetchComments = async (postId) => {
-  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`);
-  if (!response.ok) throw new Error('Yorumlar alınamadı');
-  return response.json();
-};
-
-// 5. Yorum Yap
-export const createComment = async (postId, content) => {
-  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ content }), // user_id yok!
-  });
-
-  if (!response.ok) throw new Error('Yorum yapılamadı');
-  return response.json();
-};
-
-export const fetchMyActiveEquipment = async () => {
-  const response = await fetch(`${BASE_URL}/rentals/equipment/my-active`, {
-    headers: { ...authHeaders() },
-  });
-  if (!response.ok) throw new Error('Kiralamalarım çekilemedi');
-  return response.json();
-};
-
-// --- KULLANICI VE HESAP FONKSİYONLARI ---
-
-// Kullanıcı bilgilerini getir
-export const fetchUserInfo = async (userId) => {
-  const response = await fetch(`${BASE_URL}/users/${userId}`, {
-    headers: { ...authHeaders() },
-  });
-
-  if (!response.ok) throw new Error('Kullanıcı bilgileri alınamadı');
-  return response.json();
-};
-
-// Kullanıcının aktif tekne kiralamalarını getir, burası aklımda
-export const fetchMyActiveBoatRentals = async () => {
-  const response = await fetch(`${BASE_URL}/rentals/boat/my-active`, {
-    headers: { ...authHeaders() },
-  });
-  if (!response.ok) throw new Error('Tekne kiralamaları alınamadı');
-  return response.json();
-};
-
-// Kullanıcının kendi postlarını getir
-export const fetchMyPosts = async () => {
-  const response = await fetch(`${BASE_URL}/forum/posts/my-posts`, {
-    headers: { ...authHeaders() },
-  });
-
-  if (!response.ok) throw new Error('Postlar alınamadı');
-  return response.json();
-};
-
-// --- ETKİNLİKLER FONKSİYONLARI ---
-
-// Bölgeye göre etkinlikleri getir
-export const fetchZoneActivities = async (zoneId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/activities/zone/${zoneId}`);
-    if (!response.ok) return { past: [], current: [], upcoming: [] };
-    return response.json();
-  } catch (error) {
-    console.warn(`Zone ${zoneId} etkinlikleri çekilemedi:`, error);
-    return { past: [], current: [], upcoming: [] };
-  }
-};
-
-// Tüm etkinlikleri getir ve kategorize et
-export const fetchAllActivities = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/activities`);
-    if (!response.ok) return { past: [], current: [], upcoming: [] };
-    
-    const activities = await response.json();
-    
-    // Şu anki tarih
-    const now = new Date();
-    
-    // Etkinlikleri kategorilere ayır
-    const past = [];
-    const current = [];
-    const upcoming = [];
-    
-    activities.forEach(activity => {
-      const startDate = new Date(activity.start_date);
-      const endDate = new Date(activity.end_date);
-      
-      // Geçmiş: bitiş tarihi şu andan önce
-      if (endDate < now) {
-        past.push(activity);
-      }
-      // Güncel: başlangıç tarihi şu andan önce veya eşit VE bitiş tarihi şu andan sonra
-      else if (startDate <= now && endDate >= now) {
-        current.push(activity);
-      }
-      // Gelecek: başlangıç tarihi şu andan sonra
-      else {
-        upcoming.push(activity);
-      }
-    });
-    
-    return {
-      past,
-      current,
-      upcoming
-    };
-  } catch (error) {
-    console.warn('Tüm etkinlikler çekilemedi:', error);
-    return { past: [], current: [], upcoming: [] };
-  }
-};
-
-// auth ve login işlemleri için.
+// --- AUTH (KİMLİK DOĞRULAMA) ---
 export const loginUser = async (email, password) => {
   const response = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) throw new Error(data?.error || 'Giriş başarısız');
-  return data; // { user, token }
+  return handleResponse(response);
 };
 
 export const registerUser = async (full_name, email, password, phone) => {
@@ -286,171 +34,210 @@ export const registerUser = async (full_name, email, password, phone) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ full_name, email, password, phone }),
   });
-
-  const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error || 'Kayıt başarısız');
-  return data; // { user, token }
+  return handleResponse(response);
 };
 
 export const fetchMe = async (token) => {
+  const headers = token ? { Authorization: `Bearer ${token}` } : authHeaders();
   const response = await fetch(`${BASE_URL}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: headers,
   });
-
-  const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error || 'Me alınamadı');
-  return data; // user
+  return handleResponse(response);
 };
 
-// --- ADMIN API FONKSİYONLARI ---
+export const fetchUserInfo = async (userId) => {
+  const response = await fetch(`${BASE_URL}/users/${userId}`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
 
-// Rentals Admin
+// --- HARİTA VE BÖLGELER ---
+export const fetchZones = async () => {
+  const response = await fetch(`${BASE_URL}/zones`);
+  return handleResponse(response);
+};
+
+export const fetchHotspots = async () => {
+  const response = await fetch(`${BASE_URL}/hotspots`);
+  return handleResponse(response);
+};
+
+// --- TEKNELER (KULLANICI) ---
+export const fetchActiveBoats = async () => {
+  const response = await fetch(`${BASE_URL}/boats/active`);
+  return handleResponse(response);
+};
+
+export const fetchAvailableBoats = async () => {
+  const response = await fetch(`${BASE_URL}/boats/available`);
+  return handleResponse(response);
+};
+
+// --- KİRALAMA İŞLEMLERİ ---
+export const createBoatRental = async (boatId, durationMinutes = 60) => {
+  const response = await fetch(`${BASE_URL}/rentals/boat`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ boatId, durationMinutes }),
+  });
+  return handleResponse(response);
+};
+
+export const completeBoatRental = async (rentalId) => {
+  const response = await fetch(`${BASE_URL}/rentals/${rentalId}/complete`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const fetchMyActiveBoatRentals = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/boat/my-active`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const createEquipmentRental = async (equipmentId, durationMinutes = 60) => {
+  const response = await fetch(`${BASE_URL}/rentals/equipment`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ equipmentId, durationMinutes }),
+  });
+  return handleResponse(response);
+};
+
+export const completeEquipmentRental = async (rentalId) => {
+  const response = await fetch(`${BASE_URL}/rentals/equipment/${rentalId}/complete`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const fetchMyActiveEquipment = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/equipment/my-active`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const returnAllEquipment = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/equipment/return-all`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// --- EKİPMANLAR ---
+export const fetchAvailableEquipment = async () => {
+  const response = await fetch(`${BASE_URL}/equipments/available`);
+  return handleResponse(response);
+};
+
+export const fetchEquipmentTypes = async () => {
+  const response = await fetch(`${BASE_URL}/equipments/types`);
+  return handleResponse(response);
+};
+
+// --- ADMIN İŞLEMLERİ ---
+export const createBoat = async (data) => {
+  const response = await fetch(`${BASE_URL}/boats`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const updateBoat = async (id, data) => {
+  const response = await fetch(`${BASE_URL}/boats/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const deleteBoat = async (id) => {
+  const response = await fetch(`${BASE_URL}/boats/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const createEquipment = async (data) => {
+  const response = await fetch(`${BASE_URL}/equipments`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const updateEquipment = async (id, data) => {
+  const response = await fetch(`${BASE_URL}/equipments/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const deleteEquipment = async (id) => {
+  const response = await fetch(`${BASE_URL}/equipments/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const createActivity = async (data) => {
+  const response = await fetch(`${BASE_URL}/activities`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const updateActivity = async (id, data) => {
+  const response = await fetch(`${BASE_URL}/activities/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const deleteActivity = async (id) => {
+  const response = await fetch(`${BASE_URL}/activities/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// --- ADMIN RAPORLAMA ---
 export const fetchAllRentals = async () => {
   const response = await fetch(`${BASE_URL}/rentals/admin/all`, {
-    headers: { ...authHeaders() },
+    headers: authHeaders(),
   });
-  if (!response.ok) throw new Error('Kiralamalar alınamadı');
-  return response.json();
+  return handleResponse(response);
 };
 
 export const closeRental = async (rentalId, rentalType) => {
   const response = await fetch(`${BASE_URL}/rentals/admin/${rentalId}/close`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ rentalType }),
   });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Kiralama kapatılamadı');
-  }
-  return response.json();
+  return handleResponse(response);
 };
 
-// Boats Admin
-export const createBoat = async (boatData) => {
-  const response = await fetch(`${BASE_URL}/boats`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(boatData),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Tekne oluşturulamadı');
-  }
-  return response.json();
-};
-
-export const updateBoat = async (boatId, boatData) => {
-  const response = await fetch(`${BASE_URL}/boats/${boatId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(boatData),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Tekne güncellenemedi');
-  }
-  return response.json();
-};
-
-export const deleteBoat = async (boatId) => {
-  const response = await fetch(`${BASE_URL}/boats/${boatId}`, {
-    method: 'DELETE',
-    headers: { ...authHeaders() },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Tekne silinemedi');
-  }
-  return response.json();
-};
-
-// Equipment Admin
-export const createEquipment = async (equipmentData) => {
-  const response = await fetch(`${BASE_URL}/equipments`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(equipmentData),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Ekipman oluşturulamadı');
-  }
-  return response.json();
-};
-
-export const updateEquipment = async (equipmentId, equipmentData) => {
-  const response = await fetch(`${BASE_URL}/equipments/${equipmentId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(equipmentData),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Ekipman güncellenemedi');
-  }
-  return response.json();
-};
-
-export const deleteEquipment = async (equipmentId) => {
-  const response = await fetch(`${BASE_URL}/equipments/${equipmentId}`, {
-    method: 'DELETE',
-    headers: { ...authHeaders() },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Ekipman silinemedi');
-  }
-  return response.json();
-};
-
-// Activities Admin
-export const createActivity = async (activityData) => {
-  const response = await fetch(`${BASE_URL}/activities`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(activityData),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Etkinlik oluşturulamadı');
-  }
-  return response.json();
-};
-
-export const updateActivity = async (activityId, activityData) => {
-  const response = await fetch(`${BASE_URL}/activities/${activityId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(activityData),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Etkinlik güncellenemedi');
-  }
-  return response.json();
-};
-
-export const deleteActivity = async (activityId) => {
-  const response = await fetch(`${BASE_URL}/activities/${activityId}`, {
-    method: 'DELETE',
-    headers: { ...authHeaders() },
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Etkinlik silinemedi');
-  }
-  return response.json();
-};
-
-// Equipment Types
-export const fetchEquipmentTypes = async () => {
-  const response = await fetch(`${BASE_URL}/equipments/types`);
-  if (!response.ok) throw new Error('Ekipman tipleri alınamadı');
-  return response.json();
-};
-
-// Admin: Geçmiş kiralamaları getir
 export const fetchCompletedRentals = async ({ userName, startDate, endDate, rentalType = 'all' }) => {
   const params = new URLSearchParams();
   if (userName) params.append('userName', userName);
@@ -459,27 +246,99 @@ export const fetchCompletedRentals = async ({ userName, startDate, endDate, rent
   if (rentalType) params.append('rentalType', rentalType);
 
   const response = await fetch(`${BASE_URL}/rentals/admin/completed?${params.toString()}`, {
-    headers: { ...authHeaders() },
+    headers: authHeaders(),
   });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Geçmiş kiralamalar alınamadı');
-  }
-  return response.json();
+  return handleResponse(response);
 };
 
-// Admin: Aylık kazancı getir
 export const fetchMonthlyRevenue = async ({ year, month }) => {
   const params = new URLSearchParams();
   params.append('year', year);
   params.append('month', month);
 
   const response = await fetch(`${BASE_URL}/rentals/admin/revenue?${params.toString()}`, {
-    headers: { ...authHeaders() },
+    headers: authHeaders(),
   });
-  if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    throw new Error(err?.error || 'Aylık kazanç alınamadı');
-  }
-  return response.json();
+  return handleResponse(response);
+};
+
+// --- ETKİNLİKLER ---
+export const fetchAllActivities = async () => {
+  const response = await fetch(`${BASE_URL}/activities`);
+  if (!response.ok) return { past: [], current: [], upcoming: [] };
+  
+  const activities = await response.json();
+  const now = new Date();
+  const past = [], current = [], upcoming = [];
+  
+  activities.forEach(activity => {
+    const startDate = new Date(activity.start_date);
+    const endDate = new Date(activity.end_date);
+    if (endDate < now) past.push(activity);
+    else if (startDate <= now && endDate >= now) current.push(activity);
+    else upcoming.push(activity);
+  });
+  
+  return { past, current, upcoming };
+};
+
+export const fetchZoneActivities = async (zoneId) => {
+  const response = await fetch(`${BASE_URL}/activities/zone/${zoneId}`);
+  if (!response.ok) return { past: [], current: [], upcoming: [] };
+  return handleResponse(response);
+};
+
+// --- FORUM ---
+export const fetchAllPosts = async () => {
+  const response = await fetch(`${BASE_URL}/forum/posts`, {
+    headers: authHeaders() 
+  });
+  return handleResponse(response);
+};
+
+export const fetchZonePosts = async (zoneId) => {
+  const response = await fetch(`${BASE_URL}/forum/zone/${zoneId}`, {
+    headers: authHeaders()
+  });
+
+  return handleResponse(response);
+};
+
+export const fetchMyPosts = async () => {
+  const response = await fetch(`${BASE_URL}/forum/posts/my-posts`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const createPost = async (data) => {
+  const response = await fetch(`${BASE_URL}/forum/posts`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+};
+
+export const fetchComments = async (postId) => {
+  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`);
+  return handleResponse(response);
+};
+
+export const createComment = async (postId, content) => {
+  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  return handleResponse(response);
+};
+
+// 🔥 YENİ EKLENEN: Beğeni Fonksiyonu (handleResponse kullanarak)
+export const togglePostLike = async (postId) => {
+  const response = await fetch(`${BASE_URL}/forum/posts/${postId}/like`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
 };

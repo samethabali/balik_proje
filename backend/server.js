@@ -36,7 +36,8 @@ const authRoutes = require('./routes/authRoutes');
 app.use(cors());
 
 // JSON: Gelen isteklerin içindeki JSON verisini okumamızı sağlar
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Logger: Her isteği konsola yaz (Hata ayıklamak için süperdir)
 // Eğer requestLogger dosyasını henüz oluşturmadıysan bu satırı yoruma alabilirsin

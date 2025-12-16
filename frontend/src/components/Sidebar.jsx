@@ -28,6 +28,16 @@ import {
   closeRental,
 } from '../api/api';
 
+// Tarihleri Türkiye Saatine Çeviren Fonksiyon
+const formatTimeTR = (dateString) => {
+  if (!dateString) return '';
+  const dateValue = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+  return new Date(dateValue).toLocaleTimeString('tr-TR', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
+
 const TABS = {
   INFO: 'info',
   BOAT: 'boat',
@@ -1191,7 +1201,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
                       <span style={{ color: '#22c55e', fontWeight: 'bold' }}>{currentCost.toFixed(2)} ₺</span>
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#ccc', margin: '4px 0' }}>
-                      Başlangıç: {new Date(rental.start_at).toLocaleString('tr-TR')}
+                      Başlangıç: {formatTimeTR(rental.start_at)}
                     </p>
                     <p style={{ fontSize: '0.75rem', color: '#aaa' }}>
                       {rental.price_per_hour} ₺/saat
@@ -1229,7 +1239,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
                       {rental.brand} {rental.model}
                     </p>
                     <p style={{ fontSize: '0.75rem', color: '#aaa' }}>
-                      Başlangıç: {new Date(rental.start_at).toLocaleString('tr-TR')} | {rental.price_per_hour} ₺/saat
+                      Başlangıç: {formatTimeTR(rental.start_at)} | {rental.price_per_hour} ₺/saat
                     </p>
                   </div>
                 );
@@ -1266,39 +1276,61 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
   };
 
   // Postlar Alt Tab
-  const renderPostsSubtab = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h4 style={{ color: '#00ffff', margin: 0 }}>📝 Paylaştığım Postlar</h4>
-      {myPosts.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {myPosts.map((post) => (
-            <div
-              key={post.post_id}
-              style={{
-                background: 'rgba(0, 255, 255, 0.05)',
-                border: '1px solid #00ffff33',
-                borderRadius: 6,
-                padding: 10,
-              }}
-            >
-              <h5 style={{ margin: '0 0 6px 0', color: 'white', fontSize: '0.9rem' }}>{post.title}</h5>
-              <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '4px 0' }}>{post.content}</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                  {post.zone_name ? `📍 ${post.zone_name}` : '🌐 Genel'}
-                </span>
-                <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                  {new Date(post.created_at).toLocaleDateString('tr-TR')}
-                </span>
+  // Sidebar.jsx içinde bu fonksiyonu bul ve değiştir:
+
+  const renderPostsSubtab = () => {
+    if (myPosts.length === 0) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+          <p>Henüz hiç paylaşım yapmadınız.</p>
+          <p style={{ fontSize: '0.8rem', marginTop: '10px' }}>Foruma gidip ilk gönderinizi paylaşın!</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="sidebar-content-scroll" style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto' }}>
+        {myPosts.map((post) => (
+          <div key={post.post_id} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <h4 style={{ color: '#fff', margin: 0, fontSize: '0.9rem' }}>{post.title}</h4>
+              <span style={{ color: '#888', fontSize: '0.7rem' }}>{new Date(post.created_at).toLocaleDateString()}</span>
+            </div>
+            <p style={{ color: '#ccc', fontSize: '0.8rem', lineHeight: 1.4, margin: 0 }}>
+              {post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content}
+            </p>
+            
+            {/* 🔥 YENİ EKLENEN: FOTOĞRAF GÖSTERİMİ (Sidebar İçin) */}
+            {post.photos && post.photos.length > 0 && post.photos[0] && (
+              <div style={{ marginTop: '10px' }}>
+                <img 
+                  src={post.photos[0]} 
+                  alt="Post Attachment" 
+                  style={{ 
+                    width: '100%', // Sidebar'a sığsın
+                    maxHeight: '200px', // Çok uzamasın
+                    objectFit: 'cover', // Kötü görünmesin, kırpsın
+                    borderRadius: '4px', 
+                    border: '1px solid #333'
+                  }} 
+                  onError={(e) => e.target.style.display = 'none'}
+                />
+              </div>
+            )}
+            {/* ---------------------------------------------------- */}
+
+            <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#aaa' }}>
+              <span>{post.zone_name ? `📍 ${post.zone_name}` : '🌐 Genel'}</span>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <span>❤️ {post.like_count || 0}</span>
+                {/* Yorum sayısı verisi henüz gelmiyor, gelirse eklenebilir */}
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <p style={{ color: '#888', textAlign: 'center' }}>Henüz post paylaşmadınız.</p>
-      )}
-    </div>
-  );
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   // Admin Rentals Alt Tab
   const renderAdminRentalsSubtab = () => (
@@ -1347,7 +1379,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       ) : (
         <>
           {/* Tekne Kiralamaları */}
-          {allRentals.boats.length > 0 && (
+          {allRentals?.boats?.length > 0 && (
             <div>
               <h5 style={{ color: '#22c55e', fontSize: '0.85rem', margin: '0 0 8px 0' }}>Tekneler</h5>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1369,7 +1401,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
                           Kullanıcı: {rental.user_name} ({rental.user_email})
                         </p>
                         <p style={{ fontSize: '0.75rem', color: '#aaa' }}>
-                          Başlangıç: {new Date(rental.start_at).toLocaleString('tr-TR')}
+                          Başlangıç: {formatTimeTR(rental.start_at)}
                         </p>
                         <p style={{ fontSize: '0.75rem', color: '#aaa' }}>
                           {rental.price_per_hour} ₺/saat
@@ -1399,7 +1431,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           )}
 
           {/* Ekipman Kiralamaları */}
-          {allRentals.equipment.length > 0 && (
+          {allRentals?.equipment?.length > 0 && (
             <div>
               <h5 style={{ color: '#22c55e', fontSize: '0.85rem', margin: '0 0 8px 0' }}>Ekipmanlar</h5>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1421,7 +1453,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
                           Kullanıcı: {rental.user_name} ({rental.user_email})
                         </p>
                         <p style={{ fontSize: '0.75rem', color: '#aaa' }}>
-                          Başlangıç: {new Date(rental.start_at).toLocaleString('tr-TR')}
+                          Başlangıç: {formatTimeTR(rental.start_at)}
                         </p>
                         <p style={{ fontSize: '0.75rem', color: '#aaa' }}>
                           {rental.price_per_hour} ₺/saat
@@ -1450,7 +1482,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
             </div>
           )}
 
-          {allRentals.boats.length === 0 && allRentals.equipment.length === 0 && (
+          {allRentals?.boats?.length === 0 && allRentals?.equipment?.length === 0 && (
             <p style={{ color: '#888', textAlign: 'center' }}>Aktif kiralama bulunmuyor.</p>
           )}
         </>

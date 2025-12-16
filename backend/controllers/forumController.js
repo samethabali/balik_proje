@@ -1,88 +1,86 @@
 // backend/controllers/forumController.js
-const ForumService = require('../services/forumService'); // Artık Service'i çağırıyoruz
+const ForumService = require('../services/forumService');
+const asyncWrapper = require('../middleware/asyncWrapper'); // Wrapper'ı ekledik
 
-// 1. Tüm Postları Getir
-exports.getAllPosts = async (req, res, next) => {
+// 1. Tüm Postları Getir (Kullanıcı giriş yapmışsa like durumunu görsün)
+exports.getAllPosts = async (req, res) => {
   try {
-    const posts = await ForumService.getAllPosts();
+    // Kullanıcı giriş yapmışsa ID'sini al, yapmamışsa 0 gönder
+    const currentUserId = req.user ? req.user.user_id : 0;
+    
+    // Servise bu ID'yi gönderiyoruz
+    const posts = await ForumService.getAllPosts(currentUserId); 
+    
     res.json(posts);
-  } catch (err) {
-    // Hata yönetimini middleware'e bırakabilirsin veya burada loglayabilirsin
-    console.error(err);
-    res.status(500).json({ error: 'Postlar çekilemedi' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
 // 2. Bölgeye Göre Post Getir
-exports.getPostsByZone = async (req, res, next) => {
-  const { zoneId } = req.params;
+exports.getPostsByZone = async (req, res) => {
   try {
-    const posts = await ForumService.getPostsByZone(zoneId);
+    const { zoneId } = req.params;
+    const currentUserId = req.user ? req.user.user_id : 0; // <--- Burası önemli
+    
+    const posts = await ForumService.getPostsByZone(zoneId, currentUserId);
+    
     res.json(posts);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Bölge postları çekilemedi' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-// 3. Post Oluştur
-exports.createPost = async (req, res) => {
-  try {
-    const userId = req.user.user_id;
-    const { title, content, zone_id, visibility } = req.body;
+// 3. Post Oluştur (Photo URL desteği ile)
+exports.createPost = asyncWrapper(async (req, res) => {
+  const userId = req.user.user_id;
+  const { title, content, zone_id, visibility, photoUrl } = req.body; // photoUrl eklendi
 
-    const newPost = await ForumService.createPost({
-      userId,
-      title,
-      content,
-      zone_id,
-      visibility,
-    });
-
-    res.status(201).json(newPost);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Post oluşturulamadı' });
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Başlık ve içerik zorunludur.' });
   }
-};
 
+  const newPost = await ForumService.createPost({
+    userId,
+    title,
+    content,
+    zone_id: zone_id || null,
+    visibility,
+    photoUrl // Servise gönder
+  });
+  res.status(201).json(newPost);
+});
 
-// 4. Yorumları Getir
-exports.getComments = async (req, res, next) => {
-  const { postId } = req.params;
-  try {
+// 4. Beğeni Yap / Geri Al (YENİ ENDPOINT)
+exports.toggleLike = asyncWrapper(async (req, res) => {
+  const userId = req.user.user_id;
+  const { id } = req.params; // post id
+
+  const result = await ForumService.toggleLike(userId, id);
+  res.json(result); // { liked: true } veya { liked: false } döner
+});
+
+exports.getComments = asyncWrapper(async (req, res) => {
+    const { postId } = req.params;
     const comments = await ForumService.getComments(postId);
     res.json(comments);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Yorumlar çekilemedi' });
-  }
-};
+});
 
-// 5. Yorum Yap
-exports.addComment = async (req, res) => {
-  const { postId } = req.params;
-  try {
+exports.addComment = asyncWrapper(async (req, res) => {
+    const { postId } = req.params;
     const userId = req.user.user_id;
     const { content } = req.body;
 
+    if (!content) {
+        return res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
+    }
+
     const newComment = await ForumService.addComment(postId, userId, content);
     res.status(201).json(newComment);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Yorum yapılamadı' });
-  }
-};
+});
 
-
-// 6. Kullanıcının kendi postlarını getir
-exports.getMyPosts = async (req, res) => {
-  try {
+exports.getMyPosts = asyncWrapper(async (req, res) => {
     const userId = req.user.user_id;
     const posts = await ForumService.getMyPosts(userId);
     res.json(posts);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Postlar çekilemedi' });
-  }
-};
+});

@@ -16,7 +16,7 @@ exports.getEquipmentTypes = asyncWrapper(async (req, res) => {
 exports.createEquipment = asyncWrapper(async (req, res) => {
     const { brand, model, type_id, price_per_hour } = req.body;
     
-    if (!brand || !model || !price_per_hour) {
+    if (!brand || !model || !price_per_hour || !type_id) {
         return res.status(400).json({ error: 'brand, model ve price_per_hour zorunlu' });
     }
     

@@ -72,3 +72,54 @@ exports.getAllActivities = async () => {
   return rows;
 };
 
+// 🔹 Admin: Yeni etkinlik oluştur
+exports.createActivity = async ({ zone_id, title, description, start_date, end_date }) => {
+  const query = `
+    INSERT INTO activities (zone_id, title, description, start_date, end_date)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING activity_id, zone_id, title, description, start_date, end_date, created_at;
+  `;
+  
+  const { rows } = await pool.query(query, [zone_id, title, description || null, start_date, end_date]);
+  return rows[0];
+};
+
+// 🔹 Admin: Etkinlik güncelle
+exports.updateActivity = async ({ activityId, zone_id, title, description, start_date, end_date }) => {
+  const query = `
+    UPDATE activities
+    SET zone_id = COALESCE($1, zone_id),
+        title = COALESCE($2, title),
+        description = COALESCE($3, description),
+        start_date = COALESCE($4, start_date),
+        end_date = COALESCE($5, end_date)
+    WHERE activity_id = $6
+    RETURNING activity_id, zone_id, title, description, start_date, end_date, created_at;
+  `;
+  
+  const { rows } = await pool.query(query, [zone_id, title, description, start_date, end_date, activityId]);
+  
+  if (rows.length === 0) {
+    throw new Error('Etkinlik bulunamadı');
+  }
+  
+  return rows[0];
+};
+
+// 🔹 Admin: Etkinlik sil
+exports.deleteActivity = async (activityId) => {
+  const query = `
+    DELETE FROM activities
+    WHERE activity_id = $1
+    RETURNING activity_id, title;
+  `;
+  
+  const { rows } = await pool.query(query, [activityId]);
+  
+  if (rows.length === 0) {
+    throw new Error('Etkinlik bulunamadı');
+  }
+  
+  return rows[0];
+};
+

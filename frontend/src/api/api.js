@@ -221,6 +221,51 @@ export const fetchZoneActivities = async (zoneId) => {
   }
 };
 
+// Tüm etkinlikleri getir ve kategorize et
+export const fetchAllActivities = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/activities`);
+    if (!response.ok) return { past: [], current: [], upcoming: [] };
+    
+    const activities = await response.json();
+    
+    // Şu anki tarih
+    const now = new Date();
+    
+    // Etkinlikleri kategorilere ayır
+    const past = [];
+    const current = [];
+    const upcoming = [];
+    
+    activities.forEach(activity => {
+      const startDate = new Date(activity.start_date);
+      const endDate = new Date(activity.end_date);
+      
+      // Geçmiş: bitiş tarihi şu andan önce
+      if (endDate < now) {
+        past.push(activity);
+      }
+      // Güncel: başlangıç tarihi şu andan önce veya eşit VE bitiş tarihi şu andan sonra
+      else if (startDate <= now && endDate >= now) {
+        current.push(activity);
+      }
+      // Gelecek: başlangıç tarihi şu andan sonra
+      else {
+        upcoming.push(activity);
+      }
+    });
+    
+    return {
+      past,
+      current,
+      upcoming
+    };
+  } catch (error) {
+    console.warn('Tüm etkinlikler çekilemedi:', error);
+    return { past: [], current: [], upcoming: [] };
+  }
+};
+
 // auth ve login işlemleri için.
 export const loginUser = async (email, password) => {
   const response = await fetch(`${BASE_URL}/auth/login`, {
@@ -255,4 +300,186 @@ export const fetchMe = async (token) => {
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.error || 'Me alınamadı');
   return data; // user
+};
+
+// --- ADMIN API FONKSİYONLARI ---
+
+// Rentals Admin
+export const fetchAllRentals = async () => {
+  const response = await fetch(`${BASE_URL}/rentals/admin/all`, {
+    headers: { ...authHeaders() },
+  });
+  if (!response.ok) throw new Error('Kiralamalar alınamadı');
+  return response.json();
+};
+
+export const closeRental = async (rentalId, rentalType) => {
+  const response = await fetch(`${BASE_URL}/rentals/admin/${rentalId}/close`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ rentalType }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Kiralama kapatılamadı');
+  }
+  return response.json();
+};
+
+// Boats Admin
+export const createBoat = async (boatData) => {
+  const response = await fetch(`${BASE_URL}/boats`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(boatData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Tekne oluşturulamadı');
+  }
+  return response.json();
+};
+
+export const updateBoat = async (boatId, boatData) => {
+  const response = await fetch(`${BASE_URL}/boats/${boatId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(boatData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Tekne güncellenemedi');
+  }
+  return response.json();
+};
+
+export const deleteBoat = async (boatId) => {
+  const response = await fetch(`${BASE_URL}/boats/${boatId}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders() },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Tekne silinemedi');
+  }
+  return response.json();
+};
+
+// Equipment Admin
+export const createEquipment = async (equipmentData) => {
+  const response = await fetch(`${BASE_URL}/equipments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(equipmentData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Ekipman oluşturulamadı');
+  }
+  return response.json();
+};
+
+export const updateEquipment = async (equipmentId, equipmentData) => {
+  const response = await fetch(`${BASE_URL}/equipments/${equipmentId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(equipmentData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Ekipman güncellenemedi');
+  }
+  return response.json();
+};
+
+export const deleteEquipment = async (equipmentId) => {
+  const response = await fetch(`${BASE_URL}/equipments/${equipmentId}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders() },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Ekipman silinemedi');
+  }
+  return response.json();
+};
+
+// Activities Admin
+export const createActivity = async (activityData) => {
+  const response = await fetch(`${BASE_URL}/activities`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(activityData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Etkinlik oluşturulamadı');
+  }
+  return response.json();
+};
+
+export const updateActivity = async (activityId, activityData) => {
+  const response = await fetch(`${BASE_URL}/activities/${activityId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(activityData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Etkinlik güncellenemedi');
+  }
+  return response.json();
+};
+
+export const deleteActivity = async (activityId) => {
+  const response = await fetch(`${BASE_URL}/activities/${activityId}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders() },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Etkinlik silinemedi');
+  }
+  return response.json();
+};
+
+// Equipment Types
+export const fetchEquipmentTypes = async () => {
+  const response = await fetch(`${BASE_URL}/equipments/types`);
+  if (!response.ok) throw new Error('Ekipman tipleri alınamadı');
+  return response.json();
+};
+
+// Admin: Geçmiş kiralamaları getir
+export const fetchCompletedRentals = async ({ userName, startDate, endDate, rentalType = 'all' }) => {
+  const params = new URLSearchParams();
+  if (userName) params.append('userName', userName);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (rentalType) params.append('rentalType', rentalType);
+
+  const response = await fetch(`${BASE_URL}/rentals/admin/completed?${params.toString()}`, {
+    headers: { ...authHeaders() },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Geçmiş kiralamalar alınamadı');
+  }
+  return response.json();
+};
+
+// Admin: Aylık kazancı getir
+export const fetchMonthlyRevenue = async ({ year, month }) => {
+  const params = new URLSearchParams();
+  params.append('year', year);
+  params.append('month', month);
+
+  const response = await fetch(`${BASE_URL}/rentals/admin/revenue?${params.toString()}`, {
+    headers: { ...authHeaders() },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.error || 'Aylık kazanç alınamadı');
+  }
+  return response.json();
 };

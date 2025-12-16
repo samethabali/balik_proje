@@ -62,3 +62,60 @@ exports.returnAllEquipment = asyncWrapper(async (req, res) => {
     const result = await rentalsService.returnAllMyEquipment(userId);
     res.json(result);
 });
+
+// Admin: Tüm aktif kiralamaları getir
+exports.getAllActiveRentals = asyncWrapper(async (req, res) => {
+    const rentals = await rentalsService.getAllActiveRentals();
+    res.json(rentals);
+});
+
+// Admin: Herhangi bir kiralamayı kapat
+exports.closeRental = asyncWrapper(async (req, res) => {
+    const { id } = req.params;
+    const { rentalType } = req.body; // 'boat' or 'equipment'
+    
+    const rentalId = parseInt(id, 10);
+    if (Number.isNaN(rentalId)) {
+        return res.status(400).json({ error: 'Invalid rental id' });
+    }
+    
+    if (!rentalType || !['boat', 'equipment'].includes(rentalType)) {
+        return res.status(400).json({ error: 'Invalid rental type. Must be "boat" or "equipment"' });
+    }
+
+    const result = await rentalsService.closeRental({ rentalId, rentalType });
+    res.json(result);
+});
+
+// Admin: Geçmiş kiralamaları getir
+exports.getCompletedRentals = asyncWrapper(async (req, res) => {
+    const { userName, startDate, endDate, rentalType } = req.query;
+    
+    const rentals = await rentalsService.getCompletedRentals({
+        userName: userName || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        rentalType: rentalType || 'all'
+    });
+    
+    res.json(rentals);
+});
+
+// Admin: Aylık kazancı getir
+exports.getMonthlyRevenue = asyncWrapper(async (req, res) => {
+    const { year, month } = req.query;
+    
+    if (!year || !month) {
+        return res.status(400).json({ error: 'year ve month parametreleri zorunlu' });
+    }
+    
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10);
+    
+    if (Number.isNaN(yearNum) || Number.isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+        return res.status(400).json({ error: 'Geçersiz yıl veya ay değeri' });
+    }
+    
+    const revenue = await rentalsService.getMonthlyRevenue({ year: yearNum, month: monthNum });
+    res.json(revenue);
+});

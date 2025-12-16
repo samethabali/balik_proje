@@ -169,10 +169,10 @@ const Forum = ({ selectedZone, currentUser }) => {
   };
 
   return (
-    <div style={{ padding: '14px', color: 'white', height: '100%', overflowY: 'auto', position: 'relative' }}>
+    <div className="forum-main-scroll" style={{ padding: '14px', color: 'white', height: '100%', overflowY: 'auto', position: 'relative' }}>
 
       {/* Üst Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'sticky', top: 0, background: '#020817', paddingBottom: '12px', zIndex: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'sticky', top: '-14px', background: '#020817', paddingTop: '14px', paddingBottom: '12px', zIndex: 10, marginTop: 0 }}>
         <h3 style={{ color: '#00ffff', margin: 0, fontSize: '1rem', fontWeight: 'bold', textShadow: '0 0 10px #00ffff' }}>
           {selectedZone ? `📍 ${selectedZone.name} Forumu` : "🌐 Genel Balıkçı Forumu"}
         </h3>
@@ -226,7 +226,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                   {commentsLoading ? (
                     <p style={{ fontSize: '0.8rem', color: '#888' }}>Yorumlar yükleniyor...</p>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+                    <div className="forum-comments-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', maxHeight: '200px', overflowY: 'auto' }}>
                       {comments.length === 0 ? (
                         <p style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Henüz yorum yapılmamış.</p>
                       ) : (
@@ -270,25 +270,26 @@ const Forum = ({ selectedZone, currentUser }) => {
       {/* MODAL */}
       {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-          <div style={{ background: '#020817', padding: '20px', borderRadius: '8px', border: '1px solid #00ffff', width: '90%', maxWidth: '400px', boxShadow: '0 0 20px rgba(0,255,255,0.2)' }}>
+          <div style={{ background: '#020817', padding: '20px', borderRadius: '8px', border: '1px solid #00ffff', width: '90%', maxWidth: '400px', boxShadow: '0 0 20px rgba(0,255,255,0.2)', boxSizing: 'border-box' }}>
             <h3 style={{ color: '#00ffff', marginTop: 0, marginBottom: '16px' }}>Yeni Paylaşım</h3>
-            <form onSubmit={handlePostSubmit}>
+            <form onSubmit={handlePostSubmit} style={{ width: '100%', boxSizing: 'border-box' }}>
               <input
                 type="text" placeholder="Başlık" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required
-                style={{ width: '100%', padding: '10px', marginBottom: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px', marginBottom: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', boxSizing: 'border-box' }}
               />
               <textarea
                 placeholder="İçerik" value={newContent} onChange={(e) => setNewContent(e.target.value)} required rows="4"
-                style={{ width: '100%', padding: '10px', marginBottom: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', resize: 'none' }}
+                style={{ width: '100%', padding: '10px', marginBottom: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
               />
 
               {/* SELECT KUTUSU - Sorun Çözüldü */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '6px' }}>Konum:</label>
                 <select
+                  className="forum-select-scroll"
                   value={postZoneId}
                   onChange={(e) => setPostZoneId(e.target.value)}
-                  style={{ width: '100%', padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }}
                 >
                   <option value="">🌐 Genel (Konumsuz)</option>
 

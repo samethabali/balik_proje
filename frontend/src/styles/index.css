@@ -22,3 +22,65 @@ body, html, #root {
 .custom-fish-icon div {
   animation: pulse 2s infinite ease-in-out;
 }
+
+/* Forum Scroll Bar Stilleri */
+.forum-main-scroll::-webkit-scrollbar,
+.forum-comments-scroll::-webkit-scrollbar,
+.forum-select-scroll::-webkit-scrollbar,
+.info-tab-scroll::-webkit-scrollbar,
+.equip-tab-scroll::-webkit-scrollbar,
+.sidebar-content-scroll::-webkit-scrollbar,
+.rental-history-scroll::-webkit-scrollbar,
+.accounting-panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.forum-main-scroll::-webkit-scrollbar-track,
+.forum-comments-scroll::-webkit-scrollbar-track,
+.forum-select-scroll::-webkit-scrollbar-track,
+.info-tab-scroll::-webkit-scrollbar-track,
+.equip-tab-scroll::-webkit-scrollbar-track,
+.sidebar-content-scroll::-webkit-scrollbar-track,
+.rental-history-scroll::-webkit-scrollbar-track,
+.accounting-panel-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.forum-main-scroll::-webkit-scrollbar-thumb,
+.forum-comments-scroll::-webkit-scrollbar-thumb,
+.forum-select-scroll::-webkit-scrollbar-thumb,
+.info-tab-scroll::-webkit-scrollbar-thumb,
+.equip-tab-scroll::-webkit-scrollbar-thumb,
+.sidebar-content-scroll::-webkit-scrollbar-thumb,
+.rental-history-scroll::-webkit-scrollbar-thumb,
+.accounting-panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.4);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.forum-main-scroll::-webkit-scrollbar-thumb:hover,
+.forum-comments-scroll::-webkit-scrollbar-thumb:hover,
+.forum-select-scroll::-webkit-scrollbar-thumb:hover,
+.info-tab-scroll::-webkit-scrollbar-thumb:hover,
+.equip-tab-scroll::-webkit-scrollbar-thumb:hover,
+.sidebar-content-scroll::-webkit-scrollbar-thumb:hover,
+.rental-history-scroll::-webkit-scrollbar-thumb:hover,
+.accounting-panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+/* Firefox için scroll bar stilleri */
+.forum-main-scroll,
+.forum-comments-scroll,
+.forum-select-scroll,
+.info-tab-scroll,
+.equip-tab-scroll,
+.sidebar-content-scroll,
+.rental-history-scroll,
+.accounting-panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.4) rgba(0, 0, 0, 0.3);
+}

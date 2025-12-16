@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
 
 const {
     createBoatRental,
@@ -11,6 +12,10 @@ const {
     getMyActiveBoatRentals,
     getMyActiveEquipmentRentals,
     returnAllEquipment,
+    getAllActiveRentals,
+    closeRental,
+    getCompletedRentals,
+    getMonthlyRevenue,
 } = require('../controllers/rentalsController');
 
 // Tekne kiralama başlat
@@ -37,5 +42,11 @@ router.post('/equipment/:id/complete', authMiddleware, completeEquipmentRental);
 
 // Tekne kiralamayı bitir
 router.post('/:id/complete', authMiddleware, completeBoatRental);
+
+// Admin routes
+router.get('/admin/all', authMiddleware, adminMiddleware, getAllActiveRentals);
+router.post('/admin/:id/close', authMiddleware, adminMiddleware, closeRental);
+router.get('/admin/completed', authMiddleware, adminMiddleware, getCompletedRentals);
+router.get('/admin/revenue', authMiddleware, adminMiddleware, getMonthlyRevenue);
 
 module.exports = router;

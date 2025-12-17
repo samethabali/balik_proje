@@ -71,6 +71,8 @@ async function performFishDetection() {
 
 // --- YARDIMCI FONKSİYON: Sonar Verilerini Hotspot'a Dönüştür ---
 async function syncSonarToHotspots(client) {
+  
+  await client.query(`DELETE FROM sonar_readings WHERE detected_at < NOW() - INTERVAL '20 seconds'`);
   try {
     // 1. Çok eski hotspot'ları veya teknelerden çok uzak olanları temizle
     //    - 15 saniyeden eski olanlar

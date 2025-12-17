@@ -82,6 +82,19 @@ class ForumService {
     }
   }
 
+  // 4. Yorumları Getir
+  static async getComments(postId) {
+    const query = `
+      SELECT c.comment_id, c.content, c.created_at,
+             u.full_name as author
+      FROM comments c
+      JOIN users u ON c.user_id = u.user_id
+      WHERE c.post_id = $1
+      ORDER BY c.created_at ASC
+    `;
+    const { rows } = await pool.query(query, [postId]);
+    return rows;
+  }
 
   // 4. Beğeni İşlemi (Toggle: Varsa siler, yoksa ekler) 🔥 YENİ
   static async toggleLike(userId, postId) {
@@ -112,7 +125,7 @@ class ForumService {
 
   // 6. Kullanıcının kendi postlarını getir
   static async getMyPosts(userId) {
-  const query = `
+    const query = `
     SELECT 
       p.post_id, p.title, p.content, p.created_at, p.visibility,
       u.full_name as author,
@@ -129,9 +142,9 @@ class ForumService {
     WHERE p.user_id = $1
     ORDER BY p.created_at DESC
   `;
-  const { rows } = await pool.query(query, [userId]);
-  return rows;
-}
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  }
 
   // 7. Kullanıcı forum istatistiklerini getir (Sorgu 4)
   static async getUserForumStats(userId) {

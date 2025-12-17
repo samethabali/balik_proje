@@ -7,6 +7,9 @@ import L from 'leaflet';
 import { isPointInsidePolygon } from '../utils/geometry';
 import { fetchZones, fetchHotspots, fetchActiveBoats, fetchZoneStats, fetchAllZonesStats, fetchUpcomingActivitiesByZone } from '../api/api';
 
+import toast from 'react-hot-toast';
+
+
 // --- İKON TANIMLARI ---
 // Balık ikonu (SVG)
 // --- YENİ SONAR İKONU (SVG DEĞİL, CSS IŞIK EFEKTİ) ---
@@ -262,6 +265,7 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
   const lakePolygonRef = useRef(null);
   const [boats, setBoats] = useState([]);
   const [zoneActivityMarkers, setZoneActivityMarkers] = useState([]);
+  const lastErrorToastAtRef = useRef(0); // ✅ DOĞRU YER
 
   // 🔹 1) ZONE VERİSİNİ YÜKLE
   useEffect(() => {
@@ -278,7 +282,10 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
             lakePolygonRef.current = lakeFeature.geometry.coordinates[0][0];
           }
         }
-      } catch (err) { console.error('Zones hatası:', err); }
+      } catch (err) {
+        console.error('Zones hatası:', err);
+        toast.error('Harita bölgeleri yüklenemedi.');
+      }
     };
     loadZones();
   }, []);
@@ -358,7 +365,14 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
           setHotspots(hData.features || []);
           setBoats(bData || []);
         }
-      } catch (err) { console.error('Veri hatası:', err); }
+      } catch (err) {
+        console.error('Veri hatası:', err);
+        const now = Date.now();
+        if (now - lastErrorToastAtRef.current > 30000) { // 30 sn
+          toast.error('Harita verileri güncellenemedi (hotspot/tekne).');
+          lastErrorToastAtRef.current = now;
+        }
+      }
     };
     loadData();
     const interval = setInterval(loadData, 2000);
@@ -389,91 +403,91 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
     const name = (feature.properties.name || '').toLowerCase();
     const description = (feature.properties.description || '').toLowerCase();
     const notes = (feature.properties.notes || '').toLowerCase();
-    
+
     // Göl için özel stil
     if (type === 'lake' || name.includes('van') || name.includes('göl')) {
       return { color: '#00ffff', fillColor: '#001133', weight: 2, fillOpacity: 0.3 };
     }
-    
+
     // Bölge tipine göre renk ataması
     const searchText = `${name} ${description} ${notes}`;
-    
+
     // Ormanlık / Ağaçlık bölgeler - Yeşil tonları
-    if (searchText.includes('orman') || searchText.includes('ağaç') || searchText.includes('forest') || 
-        searchText.includes('tree') || searchText.includes('wood')) {
-      return { 
-        color: '#22c55e', 
-        fillColor: '#16a34a', 
-        weight: 2, 
+    if (searchText.includes('orman') || searchText.includes('ağaç') || searchText.includes('forest') ||
+      searchText.includes('tree') || searchText.includes('wood')) {
+      return {
+        color: '#22c55e',
+        fillColor: '#16a34a',
+        weight: 2,
         fillOpacity: 0.4,
         stroke: true
       };
     }
-    
+
     // Sazlık / Bataklık / Reed bölgeler - Sarı/Turuncu tonları
     if (searchText.includes('sazlık') || searchText.includes('saz') || searchText.includes('reed') ||
-        searchText.includes('bataklık') || searchText.includes('marsh') || searchText.includes('swamp')) {
-      return { 
-        color: '#f59e0b', 
-        fillColor: '#eab308', 
-        weight: 2, 
+      searchText.includes('bataklık') || searchText.includes('marsh') || searchText.includes('swamp')) {
+      return {
+        color: '#f59e0b',
+        fillColor: '#eab308',
+        weight: 2,
         fillOpacity: 0.5,
         stroke: true
       };
     }
-    
+
     // Kıyı / Sahil bölgeleri - Mavi tonları
     if (searchText.includes('kıyı') || searchText.includes('sahil') || searchText.includes('shore') ||
-        searchText.includes('coast') || searchText.includes('beach')) {
-      return { 
-        color: '#3b82f6', 
-        fillColor: '#2563eb', 
-        weight: 2, 
+      searchText.includes('coast') || searchText.includes('beach')) {
+      return {
+        color: '#3b82f6',
+        fillColor: '#2563eb',
+        weight: 2,
         fillOpacity: 0.4,
         stroke: true
       };
     }
-    
+
     // Kayalık / Taşlık bölgeler - Gri tonları
     if (searchText.includes('kaya') || searchText.includes('taş') || searchText.includes('rock') ||
-        searchText.includes('stone') || searchText.includes('cliff')) {
-      return { 
-        color: '#6b7280', 
-        fillColor: '#4b5563', 
-        weight: 2, 
+      searchText.includes('stone') || searchText.includes('cliff')) {
+      return {
+        color: '#6b7280',
+        fillColor: '#4b5563',
+        weight: 2,
         fillOpacity: 0.4,
         stroke: true
       };
     }
-    
+
     // Çayır / Otlak bölgeler - Açık yeşil tonları
     if (searchText.includes('çayır') || searchText.includes('otlak') || searchText.includes('meadow') ||
-        searchText.includes('grass') || searchText.includes('pasture')) {
-      return { 
-        color: '#84cc16', 
-        fillColor: '#65a30d', 
-        weight: 2, 
+      searchText.includes('grass') || searchText.includes('pasture')) {
+      return {
+        color: '#84cc16',
+        fillColor: '#65a30d',
+        weight: 2,
         fillOpacity: 0.4,
         stroke: true
       };
     }
-    
+
     // Ada / Adacık bölgeler - Mor tonları
     if (searchText.includes('ada') || searchText.includes('island') || searchText.includes('isle')) {
-      return { 
-        color: '#a855f7', 
-        fillColor: '#9333ea', 
-        weight: 2, 
+      return {
+        color: '#a855f7',
+        fillColor: '#9333ea',
+        weight: 2,
         fillOpacity: 0.4,
         stroke: true
       };
     }
-    
+
     // Varsayılan renk (turuncu) - Bilinmeyen bölgeler
-    return { 
-      color: '#ffaa00', 
-      fillColor: '#ffaa00', 
-      weight: 2, 
+    return {
+      color: '#ffaa00',
+      fillColor: '#ffaa00',
+      weight: 2,
       fillOpacity: 0.5,
       stroke: true
     };
@@ -490,13 +504,13 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
       <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span><br/>
       <span style="font-size:11px; color:#888;">İstatistikler yükleniyor...</span>
     `;
-    
+
     layer.bindPopup(loadingContent);
 
     // Popup açıldığında istatistikleri yükle
     layer.on('popupopen', async () => {
       if (!zoneId) return;
-      
+
       try {
         const stats = await fetchZoneStats(zoneId);
         const statsContent = `
@@ -507,12 +521,12 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
             <div style="font-size:11px; line-height: 1.6;">
               <div><strong>📅 Aktivite Sayısı:</strong> ${stats.activity_count || 0}</div>
               <div><strong>💬 Post Sayısı:</strong> ${stats.post_count || 0}</div>
-              ${stats.avg_activity_duration_hours ? 
-                `<div><strong>⏱️ Ort. Aktivite Süresi:</strong> ${parseFloat(stats.avg_activity_duration_hours).toFixed(1)} saat</div>` : ''}
-              ${stats.earliest_activity ? 
-                `<div><strong>📆 İlk Aktivite:</strong> ${new Date(stats.earliest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
-              ${stats.latest_activity ? 
-                `<div><strong>📆 Son Aktivite:</strong> ${new Date(stats.latest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
+              ${stats.avg_activity_duration_hours ?
+            `<div><strong>⏱️ Ort. Aktivite Süresi:</strong> ${parseFloat(stats.avg_activity_duration_hours).toFixed(1)} saat</div>` : ''}
+              ${stats.earliest_activity ?
+            `<div><strong>📆 İlk Aktivite:</strong> ${new Date(stats.earliest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
+              ${stats.latest_activity ?
+            `<div><strong>📆 Son Aktivite:</strong> ${new Date(stats.latest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
             </div>
           </div>
         `;

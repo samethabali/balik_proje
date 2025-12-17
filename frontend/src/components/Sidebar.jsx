@@ -7,6 +7,7 @@ import AccountingPanel from './AccountingPanel';
 import AdminStatsPanel from './AdminStatsPanel';
 import { loginUser, registerUser, fetchMe } from '../api/api';
 import { isAdmin } from '../utils/admin';
+import toast from 'react-hot-toast';
 
 import {
   fetchAvailableBoats,
@@ -36,9 +37,9 @@ import {
 const formatTimeTR = (dateString) => {
   if (!dateString) return '';
   const dateValue = dateString.endsWith('Z') ? dateString : dateString + 'Z';
-  return new Date(dateValue).toLocaleTimeString('tr-TR', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(dateValue).toLocaleTimeString('tr-TR', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };
 
@@ -319,6 +320,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
 
       if (authMode === 'login') {
         result = await loginUser(loginEmail, loginPassword);
+        toast.success('Giriş başarılı.');
       } else {
         result = await registerUser(
           registerName,
@@ -326,6 +328,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           loginPassword,
           registerPhone
         );
+        toast.success('Kayıt başarılı. Giriş yapıldı.');
       }
 
       // App.jsx’e haber ver
@@ -343,7 +346,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       setAuthMode('login');
 
     } catch (err) {
-      alert(err.message || 'İşlem başarısız');
+      toast.error(err.message || 'İşlem başarısız');
     }
   };
 
@@ -374,15 +377,15 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
     try {
       setActionMessage('');
       await createBoatRental(boatId, 60);
-      
+
       // Tekne listesini güncelle
       setAvailableBoats(await fetchAvailableBoats());
-      
+
       // Aktif kiralamayı çek (boat_name dahil tüm bilgilerle)
       const myRentals = await fetchMyActiveBoatRentals();
       if (myRentals && myRentals.length > 0) {
         setActiveRental(myRentals[0]);
-        setActionMessage(`Tekne kiralandı! (${myRentals[0].boat_name})`);
+        toast.success(`Tekne kiralandı! (${myRentals[0].boat_name})`);
       } else {
         setActiveRental(null);
       }
@@ -399,13 +402,15 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
 
       // ÜCRETİ GÖSTEREN KISIM
       const msg = `İade alındı. Süre: ${result.duration_hours} saat. Tutar: ${result.total_price} ₺`;
-      alert(msg); // Ekrana popup çıkar
-      setActionMessage(msg);
+      toast.success(msg); // Ekrana popup çıkar
+
 
       setActiveRental(null);
       setAvailableBoats(await fetchAvailableBoats());
     } catch (err) {
-      setActionMessage(err.message || 'Hata oluştu.');
+      const m = err.message || 'Hata oluştu.';
+      setActionMessage(m);
+      toast.error(m);
     }
   };
 
@@ -415,7 +420,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       setEquipmentActionMessage('');
       // Kiralamayı yap
       await createEquipmentRental(equipmentId, 60);
-      setEquipmentActionMessage('Ekipman sepete eklendi!');
+      toast.success('Ekipman sepete eklendi!');
 
       // Listeleri yenile
       setAvailableEquipment(await fetchAvailableEquipment());
@@ -431,7 +436,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       const result = await completeEquipmentRental(rentalId);
 
       // ÜCRETİ GÖSTEREN KISIM
-      alert(`Ekipman iade edildi.\nSüre: ${result.duration_hours} saat\nToplam Tutar: ${result.total_price} ₺`);
+      toast.success(`Ekipman iade edildi.\nSüre: ${result.duration_hours} saat\nToplam Tutar: ${result.total_price} ₺`);
       setEquipmentActionMessage(`İade Tamamlandı. Tutar: ${result.total_price} ₺`);
 
       // Listeleri yenile
@@ -444,17 +449,14 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
 
   // TOPLU İADE FONKSİYONU
   const handleReturnAll = async () => {
-    if (!window.confirm("Tüm ekipmanları iade etmek istediğinize emin misiniz?")) return;
-
     try {
       setEquipmentActionMessage('');
       const result = await returnAllEquipment(); // api.js'den import etmeyi unutma!
 
       if (result.count > 0) {
-        alert(`TOPLU İADE BAŞARILI!\n\nİade Edilen Parça: ${result.count} adet\nToplam Tutar: ${result.total_price} ₺`);
-        setEquipmentActionMessage(`Hepsi iade edildi. Tutar: ${result.total_price} ₺`);
+        toast.success(`Toplu İade Başarılı!\nToplam Tutar: ${result.total_price} ₺`);
       } else {
-        alert("İade edilecek aktif ekipman yok.");
+        toast.error("İade edilecek aktif ekipman yok.");
       }
 
       // Listeleri yenile
@@ -504,7 +506,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
         setActivities(data);
       }
     } catch (err) {
-      alert(err.message || 'Hata oluştu');
+      toast.error(err.message || 'Hata oluştu');
     }
   };
 
@@ -513,9 +515,9 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
     try {
       await closeRental(rentalId, rentalType);
       setAllRentals(await fetchAllRentals());
-      alert('Kiralama kapatıldı');
+      toast.success('Kiralama kapatıldı');
     } catch (err) {
-      alert(err.message || 'Hata oluştu');
+      toast.error(err.message || 'Hata oluştu');
     }
   };
 
@@ -607,175 +609,175 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
               {selectedZone ? 'Bu bölgede henüz etkinlik bulunmuyor.' : 'Henüz etkinlik bulunmuyor.'}
             </p>
           ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {/* GÜNCEL ETKİNLİKLER */}
-                {activities.current.length > 0 && (
-                  <div>
-                    <h4 style={{ color: '#22c55e', fontSize: '0.9rem', margin: '0 0 8px 0' }}>
-                      🟢 Güncel Etkinlikler
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {activities.current.map((activity) => (
-                        <div
-                          key={activity.activity_id}
-                          style={{
-                            background: 'rgba(34, 197, 94, 0.1)',
-                            border: '1px solid rgba(34, 197, 94, 0.3)',
-                            borderRadius: 6,
-                            padding: 10,
-                            fontSize: '0.85rem',
-                            position: 'relative'
-                          }}
-                        >
-                          <strong style={{ color: '#22c55e' }}>{activity.title}</strong>
-                          {activity.description && (
-                            <p style={{ margin: '4px 0', color: '#ccc', fontSize: '0.8rem' }}>
-                              {activity.description}
-                            </p>
-                          )}
-                          {!selectedZone && activity.zone_name && (
-                            <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#00ffff' }}>
-                              📍 {activity.zone_name}
-                            </p>
-                          )}
-                          <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#aaa' }}>
-                            {formatDate(activity.start_date)} - {formatDate(activity.end_date)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {/* GÜNCEL ETKİNLİKLER */}
+              {activities.current.length > 0 && (
+                <div>
+                  <h4 style={{ color: '#22c55e', fontSize: '0.9rem', margin: '0 0 8px 0' }}>
+                    🟢 Güncel Etkinlikler
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {activities.current.map((activity) => (
+                      <div
+                        key={activity.activity_id}
+                        style={{
+                          background: 'rgba(34, 197, 94, 0.1)',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          borderRadius: 6,
+                          padding: 10,
+                          fontSize: '0.85rem',
+                          position: 'relative'
+                        }}
+                      >
+                        <strong style={{ color: '#22c55e' }}>{activity.title}</strong>
+                        {activity.description && (
+                          <p style={{ margin: '4px 0', color: '#ccc', fontSize: '0.8rem' }}>
+                            {activity.description}
                           </p>
-                          {isAdmin(currentUser) && (
-                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                              <button
-                                onClick={() => setAdminPanel({ open: true, type: 'activity', item: activity })}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
-                              >
-                                Düzenle
-                              </button>
-                              <button
-                                onClick={() => handleDeleteActivity(activity.activity_id)}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#dc2626', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
-                              >
-                                Sil
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                        {!selectedZone && activity.zone_name && (
+                          <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#00ffff' }}>
+                            📍 {activity.zone_name}
+                          </p>
+                        )}
+                        <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#aaa' }}>
+                          {formatDate(activity.start_date)} - {formatDate(activity.end_date)}
+                        </p>
+                        {isAdmin(currentUser) && (
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                            <button
+                              onClick={() => setAdminPanel({ open: true, type: 'activity', item: activity })}
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              onClick={() => handleDeleteActivity(activity.activity_id)}
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#dc2626', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* GELECEK ETKİNLİKLER */}
-                {activities.upcoming.length > 0 && (
-                  <div>
-                    <h4 style={{ color: '#3b82f6', fontSize: '0.9rem', margin: '0 0 8px 0' }}>
-                      🔵 Gelecek Etkinlikler
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {activities.upcoming.map((activity) => (
-                        <div
-                          key={activity.activity_id}
-                          style={{
-                            background: 'rgba(59, 130, 246, 0.1)',
-                            border: '1px solid rgba(59, 130, 246, 0.3)',
-                            borderRadius: 6,
-                            padding: 10,
-                            fontSize: '0.85rem',
-                            position: 'relative'
-                          }}
-                        >
-                          <strong style={{ color: '#3b82f6' }}>{activity.title}</strong>
-                          {activity.description && (
-                            <p style={{ margin: '4px 0', color: '#ccc', fontSize: '0.8rem' }}>
-                              {activity.description}
-                            </p>
-                          )}
-                          {!selectedZone && activity.zone_name && (
-                            <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#00ffff' }}>
-                              📍 {activity.zone_name}
-                            </p>
-                          )}
-                          <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#aaa' }}>
-                            {formatDate(activity.start_date)} - {formatDate(activity.end_date)}
+              {/* GELECEK ETKİNLİKLER */}
+              {activities.upcoming.length > 0 && (
+                <div>
+                  <h4 style={{ color: '#3b82f6', fontSize: '0.9rem', margin: '0 0 8px 0' }}>
+                    🔵 Gelecek Etkinlikler
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {activities.upcoming.map((activity) => (
+                      <div
+                        key={activity.activity_id}
+                        style={{
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          borderRadius: 6,
+                          padding: 10,
+                          fontSize: '0.85rem',
+                          position: 'relative'
+                        }}
+                      >
+                        <strong style={{ color: '#3b82f6' }}>{activity.title}</strong>
+                        {activity.description && (
+                          <p style={{ margin: '4px 0', color: '#ccc', fontSize: '0.8rem' }}>
+                            {activity.description}
                           </p>
-                          {isAdmin(currentUser) && (
-                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                              <button
-                                onClick={() => setAdminPanel({ open: true, type: 'activity', item: activity })}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
-                              >
-                                Düzenle
-                              </button>
-                              <button
-                                onClick={() => handleDeleteActivity(activity.activity_id)}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#dc2626', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
-                              >
-                                Sil
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                        {!selectedZone && activity.zone_name && (
+                          <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#00ffff' }}>
+                            📍 {activity.zone_name}
+                          </p>
+                        )}
+                        <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#aaa' }}>
+                          {formatDate(activity.start_date)} - {formatDate(activity.end_date)}
+                        </p>
+                        {isAdmin(currentUser) && (
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                            <button
+                              onClick={() => setAdminPanel({ open: true, type: 'activity', item: activity })}
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              onClick={() => handleDeleteActivity(activity.activity_id)}
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#dc2626', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* GEÇMİŞ ETKİNLİKLER */}
-                {activities.past.length > 0 && (
-                  <div>
-                    <h4 style={{ color: '#888', fontSize: '0.9rem', margin: '0 0 8px 0' }}>
-                      ⚪ Geçmiş Etkinlikler
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {activities.past.map((activity) => (
-                        <div
-                          key={activity.activity_id}
-                          style={{
-                            background: 'rgba(136, 136, 136, 0.1)',
-                            border: '1px solid rgba(136, 136, 136, 0.3)',
-                            borderRadius: 6,
-                            padding: 10,
-                            fontSize: '0.85rem',
-                            opacity: 0.7,
-                            position: 'relative'
-                          }}
-                        >
-                          <strong style={{ color: '#888' }}>{activity.title}</strong>
-                          {activity.description && (
-                            <p style={{ margin: '4px 0', color: '#666', fontSize: '0.8rem' }}>
-                              {activity.description}
-                            </p>
-                          )}
-                          {!selectedZone && activity.zone_name && (
-                            <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#00ffff' }}>
-                              📍 {activity.zone_name}
-                            </p>
-                          )}
-                          <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#666' }}>
-                            {formatDate(activity.start_date)} - {formatDate(activity.end_date)}
+              {/* GEÇMİŞ ETKİNLİKLER */}
+              {activities.past.length > 0 && (
+                <div>
+                  <h4 style={{ color: '#888', fontSize: '0.9rem', margin: '0 0 8px 0' }}>
+                    ⚪ Geçmiş Etkinlikler
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {activities.past.map((activity) => (
+                      <div
+                        key={activity.activity_id}
+                        style={{
+                          background: 'rgba(136, 136, 136, 0.1)',
+                          border: '1px solid rgba(136, 136, 136, 0.3)',
+                          borderRadius: 6,
+                          padding: 10,
+                          fontSize: '0.85rem',
+                          opacity: 0.7,
+                          position: 'relative'
+                        }}
+                      >
+                        <strong style={{ color: '#888' }}>{activity.title}</strong>
+                        {activity.description && (
+                          <p style={{ margin: '4px 0', color: '#666', fontSize: '0.8rem' }}>
+                            {activity.description}
                           </p>
-                          {isAdmin(currentUser) && (
-                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                              <button
-                                onClick={() => setAdminPanel({ open: true, type: 'activity', item: activity })}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
-                              >
-                                Düzenle
-                              </button>
-                              <button
-                                onClick={() => handleDeleteActivity(activity.activity_id)}
-                                style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#dc2626', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
-                              >
-                                Sil
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                        {!selectedZone && activity.zone_name && (
+                          <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#00ffff' }}>
+                            📍 {activity.zone_name}
+                          </p>
+                        )}
+                        <p style={{ margin: '4px 0', fontSize: '0.75rem', color: '#666' }}>
+                          {formatDate(activity.start_date)} - {formatDate(activity.end_date)}
+                        </p>
+                        {isAdmin(currentUser) && (
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                            <button
+                              onClick={() => setAdminPanel({ open: true, type: 'activity', item: activity })}
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#3b82f6', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              onClick={() => handleDeleteActivity(activity.activity_id)}
+                              style={{ padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: '#dc2626', color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -783,11 +785,11 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
   // BOAT TAB (Admin özellikleri eklendi)
   const renderBoatTab = () => {
     const admin = isAdmin(currentUser);
-    
+
     return (
       <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <h3 style={{ color: '#00ffff', marginTop: 0 }}>🛶 Tekne Kiralama</h3>
-        
+
         {/* Admin: Tekne Ekle Butonu */}
         {admin && (
           <button
@@ -813,10 +815,22 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
             Tekne kiralamak için giriş yapmalısınız.
           </p>
         )}
+
+        {!admin && activeRental && (
+          <div style={{ marginTop: 8, padding: 10, borderRadius: 6, border: '1px solid #22c55e55', background: 'rgba(34, 197, 94, 0.08)', fontSize: '0.85rem' }}>
+            <strong>Aktif Kiralamanız:</strong><br />
+            Tekne: {activeRental.boat_name || 'Yükleniyor...'}<br />
+            <button style={{ marginTop: 8, width: '100%', padding: '8px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#22c55e', color: '#00111f', fontWeight: 'bold' }} onClick={handleCompleteRental}>
+              Kiralamayı Bitir
+            </button>
+          </div>
+        )}
         <h4 style={{ color: '#ccc', margin: '0 0 8px 0', fontSize: '0.9rem' }}>🛳️ Müsait Tekneler </h4>
 
         {boatsLoading && <p style={{ fontSize: '0.85rem', color: '#888' }}>Tekneler yükleniyor…</p>}
         {boatsError && <p style={{ fontSize: '0.85rem', color: '#f97373' }}>{boatsError}</p>}
+
+
 
         {!boatsLoading && !boatsError && availableBoats.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -857,15 +871,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           </div>
         )}
 
-        {!admin && activeRental && (
-          <div style={{ marginTop: 8, padding: 10, borderRadius: 6, border: '1px solid #22c55e55', background: 'rgba(34, 197, 94, 0.08)', fontSize: '0.85rem' }}>
-            <strong>Aktif Kiralamanız:</strong><br />
-            Tekne: {activeRental.boat_name || 'Yükleniyor...'}<br />
-            <button style={{ marginTop: 8, width: '100%', padding: '8px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#22c55e', color: '#00111f', fontWeight: 'bold' }} onClick={handleCompleteRental}>
-              Kiralamayı Bitir
-            </button>
-          </div>
-        )}
+
         {actionMessage && <p style={{ fontSize: '0.8rem', color: '#a5b4fc', marginTop: 4 }}>{actionMessage}</p>}
       </div>
     );
@@ -874,7 +880,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
   // EQUIP TAB (Admin özellikleri eklendi)
   const renderEquipTab = () => {
     const admin = isAdmin(currentUser);
-    
+
     return (
       <div className="equip-tab-scroll" style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '15px', height: '100%', overflowY: 'auto' }}>
         <h3 style={{ color: '#00ffff', marginTop: 0 }}>🎣 Ekipman Kiralama</h3>
@@ -924,8 +930,12 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
                   borderRadius: 6, padding: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem'
                 }}>
                   <div>
-                    <strong>{rental.type_name || 'Ekipman'}</strong><br />
-                    <span style={{ fontSize: '0.75rem', color: '#ccc' }}>{rental.brand} {rental.model}</span>
+                    {/* 🔥 DÜZELTME BURADA: Backend 'equipment_name' gönderiyor! */}
+                    <strong style={{ display: 'block', color: '#fff' }}>{rental.equipment_name}</strong>
+
+                    <span style={{ fontSize: '0.75rem', color: '#ccc' }}>
+                      {rental.price_per_hour} ₺/saat
+                    </span>
                   </div>
                   <button
                     onClick={() => handleReturnEquipment(rental.equipment_rental_id)}
@@ -1336,7 +1346,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <strong>{rental.type_name || 'Ekipman'}</strong>
+                      <strong>{rental.equipment_name || 'Ekipman'}</strong>
                       <span style={{ color: '#22c55e', fontWeight: 'bold' }}>{currentCost.toFixed(2)} ₺</span>
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#ccc', margin: '4px 0' }}>
@@ -1403,20 +1413,20 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
             <p style={{ color: '#ccc', fontSize: '0.8rem', lineHeight: 1.4, margin: 0 }}>
               {post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content}
             </p>
-            
+
             {/* 🔥 YENİ EKLENEN: FOTOĞRAF GÖSTERİMİ (Sidebar İçin) */}
             {post.photos && post.photos.length > 0 && post.photos[0] && (
               <div style={{ marginTop: '10px' }}>
-                <img 
-                  src={post.photos[0]} 
-                  alt="Post Attachment" 
-                  style={{ 
+                <img
+                  src={post.photos[0]}
+                  alt="Post Attachment"
+                  style={{
                     width: '100%', // Sidebar'a sığsın
                     maxHeight: '200px', // Çok uzamasın
                     objectFit: 'cover', // Kötü görünmesin, kırpsın
-                    borderRadius: '4px', 
+                    borderRadius: '4px',
                     border: '1px solid #333'
-                  }} 
+                  }}
                   onError={(e) => e.target.style.display = 'none'}
                 />
               </div>
@@ -1442,7 +1452,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <h4 style={{ color: '#00ffff', margin: 0 }}>🔧 Tüm Aktif Kiralamalar</h4>
       </div>
-      
+
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         <button
           onClick={() => setRentalHistoryPanelOpen(true)}
@@ -1637,15 +1647,15 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
         </button>
       </div>
 
-      <div 
+      <div
         className="sidebar-content-scroll"
-        style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          overflowY: activeTab === TABS.FORUM ? 'hidden' : 'auto', 
-          overflowX: 'hidden', 
-          minHeight: 0 
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: activeTab === TABS.FORUM ? 'hidden' : 'auto',
+          overflowX: 'hidden',
+          minHeight: 0
         }}>
         {renderActiveTab()}
       </div>

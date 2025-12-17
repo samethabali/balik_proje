@@ -3,6 +3,7 @@ import GameMap from './components/GameMap';
 import Sidebar from './components/Sidebar';
 import { fetchMe } from './api/api';
 import './styles/index.css';
+import toast from 'react-hot-toast';
 
 function App() {
   const [selectedZone, setSelectedZone] = useState(null);
@@ -20,10 +21,10 @@ function App() {
         const me = await fetchMe(token);
         setCurrentUser(me);
       } catch (e) {
-        // token bozuksa temizle
         localStorage.removeItem('token');
         setToken(null);
         setCurrentUser(null);
+        toast.error('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
       }
     };
     load();

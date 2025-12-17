@@ -1,6 +1,7 @@
 // frontend/src/components/AccountingPanel.jsx
 import React, { useState, useEffect } from 'react';
 import { fetchMonthlyRevenue, fetchRevenueAnalysis } from '../api/api';
+import toast from 'react-hot-toast';
 
 const AccountingPanel = ({ onClose }) => {
   const currentDate = new Date();
@@ -41,13 +42,17 @@ const AccountingPanel = ({ onClose }) => {
   const loadRevenue = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const data = await fetchMonthlyRevenue({ year: selectedYear, month: selectedMonth });
       setRevenue(data);
+      if (notify) toast.success('Muhasebe verileri güncellendi.');
+
     } catch (err) {
-      setError(err.message || 'Kazanç bilgileri yüklenemedi');
+      const m = err.message || 'Kazanç bilgileri yüklenemedi';
+      setError(m);
       setRevenue(null);
+      toast.error(m);
     } finally {
       setLoading(false);
     }
@@ -81,7 +86,7 @@ const AccountingPanel = ({ onClose }) => {
   const loadRevenueAnalysis = async () => {
     setAnalysisLoading(true);
     setError('');
-    
+
     try {
       const params = useDateFilter ? { year: analysisYear, month: analysisMonth } : {};
       const data = await fetchRevenueAnalysis(params);
@@ -96,7 +101,7 @@ const AccountingPanel = ({ onClose }) => {
 
   const handleShow = (e) => {
     e.preventDefault();
-    loadRevenue();
+    loadRevenue({ notify: true });
   };
 
   const panelStyle = {
@@ -198,48 +203,48 @@ const AccountingPanel = ({ onClose }) => {
 
         {activeTab === 'monthly' && (
           <form onSubmit={handleShow} style={{ flexShrink: 0, marginBottom: '20px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', color: '#ccc', fontSize: '0.85rem' }}>Yıl</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                style={inputStyle}
-              >
-                {years.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#ccc', fontSize: '0.85rem' }}>Yıl</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+                  style={inputStyle}
+                >
+                  {years.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#ccc', fontSize: '0.85rem' }}>Ay</label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+                  style={inputStyle}
+                >
+                  {months.map(month => (
+                    <option key={month.value} value={month.value}>{month.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', color: '#ccc', fontSize: '0.85rem' }}>Ay</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-                style={inputStyle}
-              >
-                {months.map(month => (
-                  <option key={month.value} value={month.value}>{month.label}</option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={onClose} style={closeButtonStyle} disabled={loading}>
+                Kapat
+              </button>
+              <button type="submit" style={buttonStyle} disabled={loading}>
+                {loading ? 'Yükleniyor...' : 'Göster'}
+              </button>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button type="button" onClick={onClose} style={closeButtonStyle} disabled={loading}>
-              Kapat
-            </button>
-            <button type="submit" style={buttonStyle} disabled={loading}>
-              {loading ? 'Yükleniyor...' : 'Göster'}
-            </button>
-          </div>
-        </form>
+          </form>
         )}
 
-        <div 
-          className="accounting-panel-scroll" 
-          style={{ 
-            flex: 1, 
-            overflowY: 'auto', 
+        <div
+          className="accounting-panel-scroll"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
             overflowX: 'hidden',
             minHeight: 0,
             maxHeight: 'calc(90vh - 280px)',
@@ -253,63 +258,63 @@ const AccountingPanel = ({ onClose }) => {
               {loading && !revenue ? (
                 <p style={{ color: '#888', textAlign: 'center', padding: '20px' }}>Yükleniyor...</p>
               ) : revenue ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Tekne Kazancı */}
-              <div style={{
-                background: 'rgba(59, 130, 246, 0.1)',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                borderRadius: '8px',
-                padding: '20px'
-              }}>
-                <h3 style={{ color: '#60a5fa', margin: '0 0 10px 0', fontSize: '1rem' }}>🛶 Tekne Kiralama</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <p style={{ color: '#ccc', margin: '4px 0', fontSize: '0.85rem' }}>Toplam Kiralama: {revenue.boats.count}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Tekne Kazancı */}
+                  <div style={{
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '8px',
+                    padding: '20px'
+                  }}>
+                    <h3 style={{ color: '#60a5fa', margin: '0 0 10px 0', fontSize: '1rem' }}>🛶 Tekne Kiralama</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ color: '#ccc', margin: '4px 0', fontSize: '0.85rem' }}>Toplam Kiralama: {revenue.boats.count}</p>
+                      </div>
+                      <div style={{ color: '#60a5fa', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                        {revenue.boats.total_revenue.toFixed(2)} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ color: '#60a5fa', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                    {revenue.boats.total_revenue.toFixed(2)} ₺
-                  </div>
-                </div>
-              </div>
 
-              {/* Ekipman Kazancı */}
-              <div style={{
-                background: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                borderRadius: '8px',
-                padding: '20px'
-              }}>
-                <h3 style={{ color: '#4ade80', margin: '0 0 10px 0', fontSize: '1rem' }}>🎣 Ekipman Kiralama</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <p style={{ color: '#ccc', margin: '4px 0', fontSize: '0.85rem' }}>Toplam Kiralama: {revenue.equipment.count}</p>
+                  {/* Ekipman Kazancı */}
+                  <div style={{
+                    background: 'rgba(34, 197, 94, 0.1)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    borderRadius: '8px',
+                    padding: '20px'
+                  }}>
+                    <h3 style={{ color: '#4ade80', margin: '0 0 10px 0', fontSize: '1rem' }}>🎣 Ekipman Kiralama</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ color: '#ccc', margin: '4px 0', fontSize: '0.85rem' }}>Toplam Kiralama: {revenue.equipment.count}</p>
+                      </div>
+                      <div style={{ color: '#4ade80', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                        {revenue.equipment.total_revenue.toFixed(2)} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ color: '#4ade80', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                    {revenue.equipment.total_revenue.toFixed(2)} ₺
-                  </div>
-                </div>
-              </div>
 
-              {/* Genel Toplam */}
-              <div style={{
-                background: 'rgba(0, 255, 255, 0.1)',
-                border: '2px solid #00ffff',
-                borderRadius: '8px',
-                padding: '25px',
-                textAlign: 'center'
-              }}>
-                <h3 style={{ color: '#00ffff', margin: '0 0 15px 0', fontSize: '1.1rem' }}>💰 Genel Toplam</h3>
-                <div style={{ color: '#00ffff', fontSize: '2rem', fontWeight: 'bold' }}>
-                  {revenue.total_revenue.toFixed(2)} ₺
+                  {/* Genel Toplam */}
+                  <div style={{
+                    background: 'rgba(0, 255, 255, 0.1)',
+                    border: '2px solid #00ffff',
+                    borderRadius: '8px',
+                    padding: '25px',
+                    textAlign: 'center'
+                  }}>
+                    <h3 style={{ color: '#00ffff', margin: '0 0 15px 0', fontSize: '1.1rem' }}>💰 Genel Toplam</h3>
+                    <div style={{ color: '#00ffff', fontSize: '2rem', fontWeight: 'bold' }}>
+                      {revenue.total_revenue.toFixed(2)} ₺
+                    </div>
+                    <p style={{ color: '#aaa', margin: '10px 0 0 0', fontSize: '0.85rem' }}>
+                      {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                    </p>
+                  </div>
                 </div>
-                <p style={{ color: '#aaa', margin: '10px 0 0 0', fontSize: '0.85rem' }}>
-                  {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p style={{ color: '#888', textAlign: 'center', padding: '20px' }}>Veri bulunamadı.</p>
-          )}
+              ) : (
+                <p style={{ color: '#888', textAlign: 'center', padding: '20px' }}>Veri bulunamadı.</p>
+              )}
             </>
           ) : (
             <>
@@ -436,37 +441,37 @@ const AccountingPanel = ({ onClose }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {/* Özet Bilgi */}
                       <div style={{
-                        background: analysisSubTab === 'boat' 
-                          ? 'rgba(59, 130, 246, 0.15)' 
+                        background: analysisSubTab === 'boat'
+                          ? 'rgba(59, 130, 246, 0.15)'
                           : analysisSubTab === 'equipment'
-                          ? 'rgba(34, 197, 94, 0.15)'
-                          : 'rgba(0, 255, 255, 0.1)',
-                        border: `2px solid ${analysisSubTab === 'boat' 
-                          ? 'rgba(59, 130, 246, 0.5)' 
+                            ? 'rgba(34, 197, 94, 0.15)'
+                            : 'rgba(0, 255, 255, 0.1)',
+                        border: `2px solid ${analysisSubTab === 'boat'
+                          ? 'rgba(59, 130, 246, 0.5)'
                           : analysisSubTab === 'equipment'
-                          ? 'rgba(34, 197, 94, 0.5)'
-                          : '#00ffff'}`,
+                            ? 'rgba(34, 197, 94, 0.5)'
+                            : '#00ffff'}`,
                         borderRadius: '8px',
                         padding: '15px',
                         textAlign: 'center'
                       }}>
-                        <h3 style={{ 
-                          color: analysisSubTab === 'boat' 
-                            ? '#60a5fa' 
+                        <h3 style={{
+                          color: analysisSubTab === 'boat'
+                            ? '#60a5fa'
                             : analysisSubTab === 'equipment'
-                            ? '#4ade80'
-                            : '#00ffff',
+                              ? '#4ade80'
+                              : '#00ffff',
                           margin: '0 0 10px 0',
                           fontSize: '1rem'
                         }}>
                           {analysisSubTab === 'boat' ? '🛶 Tekne' : analysisSubTab === 'equipment' ? '🎣 Ekipman' : '💰'} Toplam
                         </h3>
-                        <div style={{ 
-                          color: analysisSubTab === 'boat' 
-                            ? '#60a5fa' 
+                        <div style={{
+                          color: analysisSubTab === 'boat'
+                            ? '#60a5fa'
                             : analysisSubTab === 'equipment'
-                            ? '#4ade80'
-                            : '#00ffff',
+                              ? '#4ade80'
+                              : '#00ffff',
                           fontSize: '1.5rem',
                           fontWeight: 'bold',
                           marginBottom: '5px'
@@ -483,11 +488,11 @@ const AccountingPanel = ({ onClose }) => {
                         <div
                           key={index}
                           style={{
-                            background: item.rental_type === 'Boat' 
-                              ? 'rgba(59, 130, 246, 0.1)' 
+                            background: item.rental_type === 'Boat'
+                              ? 'rgba(59, 130, 246, 0.1)'
                               : 'rgba(34, 197, 94, 0.1)',
-                            border: `1px solid ${item.rental_type === 'Boat' 
-                              ? 'rgba(59, 130, 246, 0.3)' 
+                            border: `1px solid ${item.rental_type === 'Boat'
+                              ? 'rgba(59, 130, 246, 0.3)'
                               : 'rgba(34, 197, 94, 0.3)'}`,
                             borderRadius: '8px',
                             padding: '15px'
@@ -495,10 +500,10 @@ const AccountingPanel = ({ onClose }) => {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                             <div>
-                              <h4 style={{ 
-                                color: item.rental_type === 'Boat' ? '#60a5fa' : '#4ade80', 
-                                margin: '0 0 5px 0', 
-                                fontSize: '0.95rem' 
+                              <h4 style={{
+                                color: item.rental_type === 'Boat' ? '#60a5fa' : '#4ade80',
+                                margin: '0 0 5px 0',
+                                fontSize: '0.95rem'
                               }}>
                                 {item.rental_type === 'Boat' ? '🛶' : '🎣'} {item.item_name}
                               </h4>
@@ -506,9 +511,9 @@ const AccountingPanel = ({ onClose }) => {
                                 ID: {item.item_id}
                               </p>
                             </div>
-                            <div style={{ 
-                              color: item.rental_type === 'Boat' ? '#60a5fa' : '#4ade80', 
-                              fontSize: '1.2rem', 
+                            <div style={{
+                              color: item.rental_type === 'Boat' ? '#60a5fa' : '#4ade80',
+                              fontSize: '1.2rem',
                               fontWeight: 'bold',
                               textAlign: 'right'
                             }}>

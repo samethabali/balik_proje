@@ -1,6 +1,7 @@
 // frontend/src/components/Forum.jsx
 import React, { useState, useEffect } from 'react';
 import { fetchAllPosts, fetchZonePosts, createPost, fetchComments, createComment, fetchZones, togglePostLike } from '../api/api';
+import toast from 'react-hot-toast';
 
 const Forum = ({ selectedZone, currentUser }) => {
   // ---------------- STATE TANIMLARI ----------------
@@ -90,7 +91,7 @@ const Forum = ({ selectedZone, currentUser }) => {
   // 3. Modal Açılınca
   const handleOpenModal = () => {
     if (!isLoggedIn) {
-      alert('Paylaşım yapmak için giriş yapmalısınız.');
+      toast.error('Paylaşım yapmak için giriş yapmalısınız.');
       return;
     }
     const activeZoneId = selectedZone ? (selectedZone.zone_id || selectedZone.id) : '';
@@ -103,7 +104,7 @@ const Forum = ({ selectedZone, currentUser }) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // Limit 5MB olsun
-        alert("Dosya boyutu çok büyük! Lütfen 5MB'dan küçük bir resim seçin.");
+        toast.error("Dosya boyutu çok büyük! Lütfen 5MB'dan küçük bir resim seçin.");
         return;
       }
       const reader = new FileReader();
@@ -130,19 +131,20 @@ const Forum = ({ selectedZone, currentUser }) => {
       const currentViewId = selectedZone ? (selectedZone.zone_id || selectedZone.id) : null;
       const updated = currentViewId ? await fetchZonePosts(currentViewId) : await fetchAllPosts();
       setPosts(updated);
+      toast.success('Paylaşım oluşturuldu.');
     } catch (err) {
-      console.error(err); alert("Hata: " + err.message);
+      console.error(err); toast.error(err.message || 'Paylaşım oluşturulamadı.');
     }
   };
 
   // 6. Beğeni Yap / Geri Al (Mantık Düzeltildi)
   const handleLike = async (postId) => {
-    if (!isLoggedIn) { alert("Beğenmek için giriş yapmalısınız!"); return; }
+    if (!isLoggedIn) { toast.error("Beğenmek için giriş yapmalısınız!"); return; }
 
     setPosts(prevPosts => prevPosts.map(post => {
       if (post.post_id === postId) {
         const currentLikedStatus = post.is_liked;
-        const newCount = currentLikedStatus 
+        const newCount = currentLikedStatus
           ? parseInt(post.like_count || 0) - 1
           : parseInt(post.like_count || 0) + 1;
         return { ...post, is_liked: !currentLikedStatus, like_count: newCount < 0 ? 0 : newCount };
@@ -156,15 +158,15 @@ const Forum = ({ selectedZone, currentUser }) => {
       console.error("Like hatası:", err);
       setPosts(prevPosts => prevPosts.map(post => {
         if (post.post_id === postId) {
-          const revertedLikedStatus = !post.is_liked; 
-          const revertedCount = revertedLikedStatus 
-             ? parseInt(post.like_count) + 1 
-             : parseInt(post.like_count) - 1;
+          const revertedLikedStatus = !post.is_liked;
+          const revertedCount = revertedLikedStatus
+            ? parseInt(post.like_count) + 1
+            : parseInt(post.like_count) - 1;
           return { ...post, is_liked: revertedLikedStatus, like_count: revertedCount };
         }
         return post;
       }));
-      alert("İşlem başarısız oldu, geri alınıyor.");
+      toast.error("İşlem başarısız oldu, geri alınıyor.");
     }
   };
 
@@ -177,8 +179,9 @@ const Forum = ({ selectedZone, currentUser }) => {
       setNewCommentText('');
       const updatedComments = await fetchComments(postId);
       setComments(updatedComments);
+      toast.success('Yorum eklendi.');
     } catch (err) {
-      alert("Yorum hatası: " + err.message);
+      toast.error("Yorum hatası: " + err.message);
     }
   };
 
@@ -196,9 +199,8 @@ const Forum = ({ selectedZone, currentUser }) => {
         <button onClick={handleOpenModal} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.85rem' }}>+ Paylaş</button>
       </div>
 
-
       {/* Post Listesi */}
-      {loading ? ( <p style={{ textAlign: 'center', color: '#888' }}>Yükleniyor...</p> ) : (
+      {loading ? (<p style={{ textAlign: 'center', color: '#888' }}>Yükleniyor...</p>) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '40px' }}>
           {posts.length === 0 && <p style={{ color: '#ccc', textAlign: 'center' }}>Burada henüz ses yok.</p>}
           {posts.map((post) => (
@@ -212,16 +214,16 @@ const Forum = ({ selectedZone, currentUser }) => {
               {/* 🔥 FOTOĞRAF ALANI (Tıklanınca Büyür) */}
               {post.photos && post.photos.length > 0 && post.photos[0] && (
                 <div style={{ marginBottom: '12px' }}>
-                  <img 
-                    src={post.photos[0]} 
-                    alt="Post Attachment" 
+                  <img
+                    src={post.photos[0]}
+                    alt="Post Attachment"
                     // Tıklama olayı eklendi
                     onClick={() => setSelectedImage(post.photos[0])}
-                    style={{ 
+                    style={{
                       maxWidth: '100%', maxHeight: '300px', borderRadius: '4px', border: '1px solid #333',
                       cursor: 'pointer' // İmleç değişsin
                     }}
-                    onError={(e) => e.target.style.display = 'none'} 
+                    onError={(e) => e.target.style.display = 'none'}
                   />
                 </div>
               )}
@@ -243,9 +245,9 @@ const Forum = ({ selectedZone, currentUser }) => {
               {/* Yorum Alanı (Aynı) */}
               {expandedPostId === post.post_id && (
                 <div style={{ marginTop: '15px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
-                  {commentsLoading ? ( <p style={{ fontSize: '0.8rem', color: '#888' }}>Yorumlar yükleniyor...</p> ) : (
+                  {commentsLoading ? (<p style={{ fontSize: '0.8rem', color: '#888' }}>Yorumlar yükleniyor...</p>) : (
                     <div className="forum-comments-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                      {comments.length === 0 ? ( <p style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Henüz yorum yapılmamış.</p> ) : (
+                      {comments.length === 0 ? (<p style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Henüz yorum yapılmamış.</p>) : (
                         comments.map(comment => (
                           <div key={comment.comment_id} style={{ borderBottom: '1px solid #333', paddingBottom: '6px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -263,7 +265,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                       <input type="text" placeholder="Yorum yaz..." value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)} style={{ flex: 1, background: '#1a202c', border: '1px solid #444', color: 'white', borderRadius: '4px', padding: '6px', fontSize: '0.85rem', outline: 'none' }} />
                       <button type="submit" style={{ background: '#22c55e', border: 'none', borderRadius: '4px', padding: '0 10px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>➜</button>
                     </form>
-                  ) : ( <p style={{ fontSize: '0.8rem', color: '#888' }}>Yorum yapmak için giriş yapmalısınız.</p> )}
+                  ) : (<p style={{ fontSize: '0.8rem', color: '#888' }}>Yorum yapmak için giriş yapmalısınız.</p>)}
                 </div>
               )}
             </div>
@@ -288,7 +290,7 @@ const Forum = ({ selectedZone, currentUser }) => {
                 <label style={{ display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '6px' }}>Konum:</label>
                 <select className="forum-select-scroll" value={postZoneId} onChange={(e) => setPostZoneId(e.target.value)} style={{ width: '100%', padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '4px', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }}>
                   <option value="">🌐 Genel (Konumsuz)</option>
-                  {zonesList.map((zone) => { const zId = zone.properties?.zone_id || zone.properties?.id || zone.id; const zName = zone.properties?.name || zone.name || "Bilinmeyen Bölge"; if (!zId) return null; return ( <option key={zId} value={zId}>📍 {zName}</option> ); })}
+                  {zonesList.map((zone) => { const zId = zone.properties?.zone_id || zone.properties?.id || zone.id; const zName = zone.properties?.name || zone.name || "Bilinmeyen Bölge"; if (!zId) return null; return (<option key={zId} value={zId}>📍 {zName}</option>); })}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
@@ -302,7 +304,7 @@ const Forum = ({ selectedZone, currentUser }) => {
 
       {/* 🔥 YENİ MODAL: FOTOĞRAF BÜYÜTME (Lightbox) */}
       {selectedImage && (
-        <div 
+        <div
           onClick={() => setSelectedImage(null)} // Arka plana tıklayınca kapat
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -311,11 +313,11 @@ const Forum = ({ selectedZone, currentUser }) => {
             zIndex: 10000, cursor: 'zoom-out'
           }}
         >
-          <img 
-            src={selectedImage} 
-            alt="Large View" 
-            style={{ 
-              maxWidth: '90%', maxHeight: '90%', 
+          <img
+            src={selectedImage}
+            alt="Large View"
+            style={{
+              maxWidth: '90%', maxHeight: '90%',
               borderRadius: '8px', border: '2px solid #00ffff',
               boxShadow: '0 0 20px rgba(0,255,255,0.3)',
               cursor: 'default' // Resim üzerindeyken imleç normal olsun

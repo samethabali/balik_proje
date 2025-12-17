@@ -1,6 +1,7 @@
 // frontend/src/components/RentalHistoryPanel.jsx
 import React, { useState } from 'react';
 import { fetchCompletedRentals } from '../api/api';
+import toast from 'react-hot-toast';
 
 const RentalHistoryPanel = ({ onClose }) => {
   const [rentals, setRentals] = useState([]);
@@ -17,7 +18,7 @@ const RentalHistoryPanel = ({ onClose }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const data = await fetchCompletedRentals({
         userName: filters.userName || null,
@@ -26,9 +27,17 @@ const RentalHistoryPanel = ({ onClose }) => {
         rentalType: filters.rentalType
       });
       setRentals(data);
+      if (!data || data.length === 0) {
+        toast('Sonuç bulunamadı. Filtreleri değiştirip tekrar deneyin.');
+      } else {
+        toast.success(`${data.length} kayıt bulundu.`);
+      }
+
     } catch (err) {
-      setError(err.message || 'Kiralamalar yüklenemedi');
+      const m = err.message || 'Kiralamalar yüklenemedi';
+      setError(m);
       setRentals([]);
+      toast.error(m);
     } finally {
       setLoading(false);
     }
@@ -182,7 +191,7 @@ const RentalHistoryPanel = ({ onClose }) => {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                         <strong style={{ color: '#00ffff' }}>{rental.item_name}</strong>
-                        <span style={{ 
+                        <span style={{
                           background: rental.rental_type === 'boat' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)',
                           color: rental.rental_type === 'boat' ? '#60a5fa' : '#4ade80',
                           padding: '2px 8px',

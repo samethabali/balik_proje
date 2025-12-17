@@ -1,0 +1,236 @@
+.profileContainer,
+.rentalsContainer,
+.adminRentalsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  color: #00ffff;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.subsectionTitle {
+  color: #22c55e;
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
+}
+
+.infoCard,
+.statsCard,
+.forumStatsCard {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid #00ffff33;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.infoItem {
+  margin: 4px 0;
+}
+
+.totalSpent {
+  margin: 4px 0;
+  color: #60a5fa;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.forumStatsTitle {
+  color: #4ade80;
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+}
+
+.forumStatsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.statsLabel {
+  color: #ccc;
+}
+
+.statsValue {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.errorText {
+  color: #888;
+}
+
+.loadingText {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.logoutButton {
+  margin-top: 15px;
+}
+
+/* Rentals Tab */
+.rentalsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.totalCard {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid #00ffff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.totalContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalLabel {
+  color: #00ffff;
+}
+
+.totalAmount {
+  color: #00ffff;
+  font-size: 1.1rem;
+}
+
+.emptyMessage {
+  color: #888;
+  text-align: center;
+}
+
+/* Posts Tab */
+.postsContainer {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.postCard {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.postHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.postTitle {
+  color: #fff;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.postDate {
+  color: #888;
+  font-size: 0.7rem;
+}
+
+.postContent {
+  color: #ccc;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.postImageContainer {
+  margin-top: 10px;
+}
+
+.postImage {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.postFooter {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.postZone {
+  color: #aaa;
+}
+
+.postStats {
+  display: flex;
+  gap: 10px;
+}
+
+.emptyContainer {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+.emptyHint {
+  font-size: 0.8rem;
+  margin-top: 10px;
+}
+
+/* Admin Rentals Tab */
+.rentalCard {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.rentalHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.rentalName {
+  display: block;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.rentalUser {
+  font-size: 0.75rem;
+  color: #ccc;
+  margin: 4px 0;
+}
+
+.rentalTime {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.rentalPrice {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.closeButton {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  align-self: flex-start;
+}
+

@@ -1,0 +1,69 @@
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.activitySection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 0.9rem;
+  margin: 0 0 8px 0;
+}
+
+.activityItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activityItem {
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+  position: relative;
+}
+
+.activityTitle {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.activityDescription {
+  margin: 4px 0;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.activityZone {
+  margin: 4px 0;
+  font-size: 0.75rem;
+  color: #00ffff;
+}
+
+.activityDate {
+  margin: 4px 0;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.activityActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.actionButton {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+}
+
+.emptyMessage {
+  font-size: 0.85rem;
+  color: #666;
+}
+

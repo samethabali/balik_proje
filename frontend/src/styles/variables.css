@@ -1,0 +1,52 @@
+:root {
+  /* Colors */
+  --color-primary: #00ffff;
+  --color-primary-dark: #00111f;
+  --color-secondary: #00111f;
+  --color-danger: #dc2626;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+  
+  /* Background Colors */
+  --bg-dark: #020817;
+  --bg-darker: #050505;
+  --bg-input: #111;
+  --bg-card: rgba(0, 255, 255, 0.05);
+  --bg-card-hover: rgba(0, 255, 255, 0.1);
+  
+  /* Border Colors */
+  --border-color: #333;
+  --border-color-light: rgba(0, 255, 255, 0.3);
+  --border-color-primary: #00ffff;
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #ccc;
+  --text-muted: #888;
+  --text-disabled: #666;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(0, 255, 255, 0.3);
+  
+  /* Z-index */
+  --z-modal: 10000;
+  --z-dropdown: 1000;
+  --z-sticky: 100;
+}
+

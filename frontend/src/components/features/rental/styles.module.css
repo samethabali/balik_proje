@@ -1,0 +1,112 @@
+.rentalList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rentalCard {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid #00ffff33;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.rentalInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rentalDetails {
+  flex: 1;
+}
+
+.rentalName {
+  display: block;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.rentalSpecs {
+  font-size: 0.75rem;
+  color: #ccc;
+  margin: 2px 0;
+}
+
+.rentalActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.actionButton {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.rentButton {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+
+.errorMessage {
+  font-size: 0.85rem;
+  color: #f97373;
+}
+
+.emptyMessage {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Active Rental Card */
+.activeRentalCard {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.activeRentalHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.activeRentalName {
+  display: block;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.activeRentalSpecs {
+  font-size: 0.75rem;
+  color: #ccc;
+  margin: 4px 0;
+}
+
+.activeRentalTime {
+  font-size: 0.75rem;
+  color: #ccc;
+  margin: 4px 0;
+}
+
+.activeRentalPrice {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.activeRentalCost {
+  color: #22c55e;
+  font-weight: bold;
+  font-size: 1rem;
+  text-align: right;
+}
+
+.returnButton {
+  width: 100%;
+  margin-top: 8px;
+}
+

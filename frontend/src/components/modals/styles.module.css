@@ -1,0 +1,89 @@
+.postForm {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fileUploadSection {
+  margin-bottom: 12px;
+}
+
+.fileLabel {
+  display: block;
+  margin-bottom: 5px;
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
+.fileInput {
+  width: 100%;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.previewSection {
+  margin-top: 5px;
+}
+
+.previewText {
+  color: #00ffff;
+  font-size: 0.7rem;
+  margin: 0;
+}
+
+.previewImage {
+  height: 50px;
+  margin-top: 5px;
+  border-radius: 4px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* Lightbox Styles */
+.lightboxBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+  cursor: zoom-out;
+}
+
+.lightboxImage {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 8px;
+  border: 2px solid #00ffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  cursor: default;
+}
+
+/* Confirm Modal Styles */
+.confirmContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.confirmMessage {
+  color: #ccc;
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+

@@ -1,0 +1,95 @@
+.filterForm {
+  flex-shrink: 0;
+  margin-bottom: 20px;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.filterActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.errorMessage {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 15px;
+  color: #fca5a5;
+  flex-shrink: 0;
+}
+
+.emptyMessage {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+}
+
+.rentalList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rentalCard {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid #00ffff33;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 0.85rem;
+}
+
+.rentalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.rentalInfo {
+  flex: 1;
+}
+
+.rentalTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rentalName {
+  color: #00ffff;
+}
+
+.rentalUser {
+  color: #ccc;
+  margin: 4px 0;
+  font-size: 0.8rem;
+}
+
+.rentalDate {
+  color: #aaa;
+  margin: 4px 0;
+  font-size: 0.75rem;
+}
+
+.rentalPrice {
+  color: #22c55e;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-align: right;
+}
+

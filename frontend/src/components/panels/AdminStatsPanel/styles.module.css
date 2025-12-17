@@ -1,0 +1,158 @@
+.scrollableList {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 8px;
+}
+
+.tabTitle {
+  font-size: 1rem;
+  margin: 0 0 15px 0;
+}
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emptyMessage {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px;
+}
+
+.emptyContainer {
+  text-align: center;
+  padding: 20px;
+}
+
+.emptyHint {
+  color: #666;
+  font-size: 0.75rem;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.errorMessage {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 15px;
+  color: #fca5a5;
+  flex-shrink: 0;
+}
+
+.panelFooter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  flex-shrink: 0;
+}
+
+/* User Tab Styles */
+.userCard {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+.userName {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.userEmail {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 2px;
+}
+
+.userRole {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+/* Spending Tab Styles */
+.spendingCard {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+.statName {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.statDetails {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+
+.statTotal {
+  font-size: 1rem;
+  color: #4ade80;
+  font-weight: bold;
+}
+
+/* Forum Tab Styles */
+.forumCard {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+/* Zones Tab Styles */
+.zonesCard {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+/* Popular Tab Styles */
+.popularHeader {
+  margin-bottom: 10px;
+}
+
+.popularDescription {
+  font-size: 0.75rem;
+  color: #888;
+  margin: 0;
+  font-style: italic;
+}
+
+.popularCard {
+  background: rgba(236, 72, 153, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+.popularHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.popularScore {
+  font-size: 0.85rem;
+  color: #ec4899;
+  font-weight: bold;
+}
+

@@ -1,0 +1,32 @@
+.forumContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin-top: 10px;
+}
+
+.forumHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.forumTitle {
+  color: #00ffff;
+  margin: 0;
+}
+
+.newPostButton {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.forumContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+

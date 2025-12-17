@@ -1,7 +1,11 @@
 /* 1. BU SATIR EN TEPEDE OLMAK ZORUNDA */
 @import "leaflet/dist/leaflet.css";
 
-/* 2. Sonra genel ayarlar */
+/* 2. CSS Variables ve Utilities */
+@import "./variables.css";
+@import "./utilities.css";
+
+/* 3. Sonra genel ayarlar */
 body, html, #root {
   margin: 0;
   padding: 0;

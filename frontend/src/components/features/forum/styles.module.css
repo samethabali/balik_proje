@@ -1,0 +1,185 @@
+.postList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 40px;
+}
+
+.postCard {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid #00ffff33;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.postHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.postTitle {
+  font-weight: bold;
+  color: white;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.postDate {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.postContent {
+  color: #ccc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.postImageContainer {
+  margin-bottom: 12px;
+}
+
+.postImage {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  cursor: pointer;
+}
+
+.postFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #00ffff22;
+  padding-top: 8px;
+}
+
+.postAuthor {
+  display: flex;
+  flex-direction: column;
+}
+
+.authorName {
+  font-size: 0.8rem;
+  color: #00ffff;
+}
+
+.postZone {
+  font-size: 0.7rem;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+.postActions {
+  display: flex;
+  gap: 15px;
+}
+
+.actionButton {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  transition: transform 0.1s;
+}
+
+.actionButton:hover {
+  transform: scale(1.1);
+}
+
+.actionButton.liked {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.commentsContainer {
+  margin-top: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.emptyMessage {
+  color: #ccc;
+  text-align: center;
+}
+
+/* Comment Section Styles */
+.commentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.commentItem {
+  border-bottom: 1px solid #333;
+  padding-bottom: 6px;
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+}
+
+.commentAuthor {
+  font-size: 0.75rem;
+  color: #00ffff;
+  font-weight: bold;
+}
+
+.commentTime {
+  font-size: 0.7rem;
+  color: #555;
+}
+
+.commentContent {
+  font-size: 0.85rem;
+  color: #ddd;
+  margin: 4px 0 0 0;
+}
+
+.commentForm {
+  display: flex;
+  gap: 8px;
+}
+
+.commentInput {
+  flex: 1;
+  background: #1a202c;
+  border: 1px solid #444;
+  padding: 6px;
+  font-size: 0.85rem;
+}
+
+.commentSubmit {
+  padding: 0 10px;
+  font-size: 0.8rem;
+}
+
+.loginPrompt {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.noComments {
+  font-size: 0.8rem;
+  color: #666;
+  font-style: italic;
+}
+

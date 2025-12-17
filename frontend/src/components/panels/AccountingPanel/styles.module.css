@@ -1,0 +1,268 @@
+.monthlyForm {
+  flex-shrink: 0;
+  margin-bottom: 20px;
+}
+
+.dateGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  max-height: calc(90vh - 280px);
+  padding-right: 12px;
+  margin-right: -12px;
+  margin-top: 10px;
+}
+
+.errorMessage {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 15px;
+  color: #fca5a5;
+  flex-shrink: 0;
+}
+
+.emptyMessage {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Monthly Tab Styles */
+.revenueCards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardTitle {
+  color: #60a5fa;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.cardContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardText {
+  color: #ccc;
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.revenueAmount {
+  color: #60a5fa;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.totalCard {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 2px solid #00ffff !important;
+  border-radius: 8px;
+  padding: 25px;
+  text-align: center;
+}
+
+.totalTitle {
+  color: #00ffff;
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+}
+
+.totalAmount {
+  color: #00ffff;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.totalDate {
+  color: #aaa;
+  margin: 10px 0 0 0;
+  font-size: 0.85rem;
+}
+
+/* Trend Tab Styles */
+.trendList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.trendCard {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.trendHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.trendMonth {
+  color: #00ffff;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.trendBadge {
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.trendGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+
+.trendLabel {
+  color: #ccc;
+}
+
+.trendValue {
+  color: #fff;
+  font-weight: bold;
+}
+
+.trendRevenue {
+  color: #00ffff;
+  font-weight: bold;
+}
+
+.trendChange {
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.peakDay {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-top: 8px;
+}
+
+/* Analysis Tab Styles */
+.dateFilterSection {
+  margin-bottom: 15px;
+  flex-shrink: 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.checkbox {
+  cursor: pointer;
+}
+
+.subTabButtons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  flex-shrink: 0;
+}
+
+.subTabButton {
+  flex: 1;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.analysisContent {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.summaryCard {
+  text-align: center;
+  padding: 15px;
+}
+
+.summaryTitle {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.summaryAmount {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.summaryText {
+  color: #aaa;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.analysisItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.analysisItemTitle {
+  margin: 0 0 5px 0;
+  font-size: 0.95rem;
+}
+
+.analysisItemId {
+  color: #aaa;
+  margin: 2px 0;
+  font-size: 0.8rem;
+}
+
+.analysisItemRevenue {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: right;
+}
+
+.analysisItemGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.analysisLabel {
+  color: #ccc;
+}
+
+.analysisValue {
+  color: #fff;
+  font-weight: bold;
+}
+

@@ -84,3 +84,26 @@ exports.getMyPosts = asyncWrapper(async (req, res) => {
     const posts = await ForumService.getMyPosts(userId);
     res.json(posts);
 });
+
+// Kullanıcı forum istatistiklerini getir (Sorgu 4)
+exports.getUserForumStats = asyncWrapper(async (req, res) => {
+    const { userId } = req.params;
+    const userIdNum = parseInt(userId, 10);
+
+    if (Number.isNaN(userIdNum)) {
+        return res.status(400).json({ error: 'Geçersiz kullanıcı ID' });
+    }
+
+    try {
+        const stats = await ForumService.getUserForumStats(userIdNum);
+        res.json(stats);
+    } catch (err) {
+        return res.status(404).json({ error: err.message });
+    }
+});
+
+// Tüm kullanıcıların forum istatistiklerini getir (Sorgu 4 - Admin)
+exports.getAllUsersForumStats = asyncWrapper(async (req, res) => {
+    const stats = await ForumService.getAllUsersForumStats();
+    res.json(stats);
+});

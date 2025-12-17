@@ -8,8 +8,13 @@ module.exports = function authMiddleware(req, res, next) {
         return res.status(401).json({ error: 'Yetkisiz: Token yok' });
     }
 
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        return res.status(500).json({ error: 'Sunucu yapılandırma hatası: JWT_SECRET tanımlı değil' });
+    }
+
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        const payload = jwt.verify(token, jwtSecret);
         req.user = payload; // { user_id, email, full_name, role_id }
         next();
     } catch (err) {

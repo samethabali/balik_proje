@@ -5,7 +5,7 @@ import L from 'leaflet';
 
 // Kendi yazdığımız modüller
 import { isPointInsidePolygon } from '../utils/geometry';
-import { fetchZones, fetchHotspots, fetchActiveBoats } from '../api/api';
+import { fetchZones, fetchHotspots, fetchActiveBoats, fetchZoneStats, fetchAllZonesStats } from '../api/api';
 
 // --- İKON TANIMLARI ---
 // Balık ikonu (SVG)
@@ -53,6 +53,89 @@ const boatIcon = new L.DivIcon({
   popupAnchor: [0, -18]
 });
 
+// Etkinlik badge ikonu - Modern tasarım
+const createActivityBadgeIcon = (count) => {
+  return new L.DivIcon({
+    className: 'activity-badge-icon',
+    html: `
+      <div style="
+        position: relative;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <!-- Glow efekti -->
+        <div style="
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(circle, rgba(245, 158, 11, 0.4) 0%, rgba(245, 158, 11, 0) 70%);
+          border-radius: 50%;
+          animation: pulse-glow 2s ease-in-out infinite;
+        "></div>
+        
+        <!-- Ana badge -->
+        <div style="
+          position: relative;
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+          border: 3px solid #fff;
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 
+            0 4px 12px rgba(0, 0, 0, 0.5),
+            0 0 20px rgba(245, 158, 11, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+          transform: translateZ(0);
+          transition: all 0.3s ease;
+        ">
+          <!-- Etkinlik ikonu (kalendar) -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 2px;">
+            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="white" opacity="0.9"/>
+          </svg>
+          <!-- Sayı -->
+          <span style="
+            font-weight: 900;
+            font-size: 11px;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            line-height: 1;
+            margin-top: -2px;
+          ">${count}</span>
+        </div>
+      </div>
+      <style>
+        @keyframes pulse-glow {
+          0%, 100% {
+            opacity: 0.6;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.3);
+          }
+        }
+        .activity-badge-icon:hover div:last-child {
+          transform: scale(1.15);
+          box-shadow: 
+            0 6px 16px rgba(0, 0, 0, 0.6),
+            0 0 30px rgba(245, 158, 11, 0.8),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+      </style>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
+  });
+};
+
 // --- YARDIMCI BİLEŞEN: Harita Boşluğuna Tıklama ---
 // Bu bileşen harita zeminine tıklanınca seçimi sıfırlar.
 function MapBackgroundClick({ onDeselect }) {
@@ -72,6 +155,7 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
   const [fishPos, setFishPos] = useState([38.60, 42.90]);
   const lakePolygonRef = useRef(null);
   const [boats, setBoats] = useState([]);
+  const [zoneActivityMarkers, setZoneActivityMarkers] = useState([]);
 
   // 🔹 1) ZONE VERİSİNİ YÜKLE
   useEffect(() => {
@@ -92,6 +176,70 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
     };
     loadZones();
   }, []);
+
+  // 🔹 BÖLGE ETKİNLİK MARKER'LARINI YÜKLE
+  useEffect(() => {
+    if (!lakeData) return;
+
+    const loadActivityMarkers = async () => {
+      try {
+        const allZonesStats = await fetchAllZonesStats();
+        const statsMap = new Map();
+        allZonesStats.forEach(stat => {
+          statsMap.set(stat.zone_id, stat);
+        });
+
+        // Her bölge için etkinlik sayısı > 0 ise marker oluştur
+        const markers = [];
+        lakeData.features.forEach(feature => {
+          const zoneId = feature.properties.zone_id || feature.properties.id;
+          if (!zoneId) return;
+
+          const stats = statsMap.get(parseInt(zoneId));
+          const activityCount = stats?.activity_count || 0;
+
+          if (activityCount > 0) {
+            // Polygon centroid hesapla
+            // GeoJSON formatı: [lng, lat], Leaflet formatı: [lat, lng]
+            let center = null;
+            if (feature.geometry.type === 'Polygon') {
+              const coords = feature.geometry.coordinates[0];
+              let sumLng = 0, sumLat = 0;
+              coords.forEach(coord => {
+                sumLng += coord[0]; // GeoJSON: lng
+                sumLat += coord[1]; // GeoJSON: lat
+              });
+              // Leaflet için [lat, lng] formatına çevir
+              center = [sumLat / coords.length, sumLng / coords.length];
+            } else if (feature.geometry.type === 'MultiPolygon') {
+              const coords = feature.geometry.coordinates[0][0];
+              let sumLng = 0, sumLat = 0;
+              coords.forEach(coord => {
+                sumLng += coord[0]; // GeoJSON: lng
+                sumLat += coord[1]; // GeoJSON: lat
+              });
+              // Leaflet için [lat, lng] formatına çevir
+              center = [sumLat / coords.length, sumLng / coords.length];
+            }
+
+            if (center) {
+              markers.push({
+                zoneId: parseInt(zoneId),
+                position: center,
+                activityCount: activityCount
+              });
+            }
+          }
+        });
+
+        setZoneActivityMarkers(markers);
+      } catch (err) {
+        console.error('Bölge etkinlik marker\'ları yüklenemedi:', err);
+      }
+    };
+
+    loadActivityMarkers();
+  }, [lakeData]);
 
   // 🔹 2) HOTSPOT & BOAT VERİLERİ (Senin kodların aynen duruyor)
   useEffect(() => {
@@ -131,23 +279,148 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
 
   // --- STİL AYARLARI ---
   const getStyle = (feature) => {
-    // Tıklanınca belli olsun diye stil mantığı eklenebilir ama şimdilik senin stilin kalsın
     const type = feature.properties.type || 'unknown';
-    if (type === 'lake' || (feature.properties.name && feature.properties.name.includes('Van'))) {
+    const name = (feature.properties.name || '').toLowerCase();
+    const description = (feature.properties.description || '').toLowerCase();
+    const notes = (feature.properties.notes || '').toLowerCase();
+    
+    // Göl için özel stil
+    if (type === 'lake' || name.includes('van') || name.includes('göl')) {
       return { color: '#00ffff', fillColor: '#001133', weight: 2, fillOpacity: 0.3 };
     }
-    return { color: '#ffaa00', fillColor: '#ffaa00', weight: 2, fillOpacity: 0.5 };
+    
+    // Bölge tipine göre renk ataması
+    const searchText = `${name} ${description} ${notes}`;
+    
+    // Ormanlık / Ağaçlık bölgeler - Yeşil tonları
+    if (searchText.includes('orman') || searchText.includes('ağaç') || searchText.includes('forest') || 
+        searchText.includes('tree') || searchText.includes('wood')) {
+      return { 
+        color: '#22c55e', 
+        fillColor: '#16a34a', 
+        weight: 2, 
+        fillOpacity: 0.4,
+        stroke: true
+      };
+    }
+    
+    // Sazlık / Bataklık / Reed bölgeler - Sarı/Turuncu tonları
+    if (searchText.includes('sazlık') || searchText.includes('saz') || searchText.includes('reed') ||
+        searchText.includes('bataklık') || searchText.includes('marsh') || searchText.includes('swamp')) {
+      return { 
+        color: '#f59e0b', 
+        fillColor: '#eab308', 
+        weight: 2, 
+        fillOpacity: 0.5,
+        stroke: true
+      };
+    }
+    
+    // Kıyı / Sahil bölgeleri - Mavi tonları
+    if (searchText.includes('kıyı') || searchText.includes('sahil') || searchText.includes('shore') ||
+        searchText.includes('coast') || searchText.includes('beach')) {
+      return { 
+        color: '#3b82f6', 
+        fillColor: '#2563eb', 
+        weight: 2, 
+        fillOpacity: 0.4,
+        stroke: true
+      };
+    }
+    
+    // Kayalık / Taşlık bölgeler - Gri tonları
+    if (searchText.includes('kaya') || searchText.includes('taş') || searchText.includes('rock') ||
+        searchText.includes('stone') || searchText.includes('cliff')) {
+      return { 
+        color: '#6b7280', 
+        fillColor: '#4b5563', 
+        weight: 2, 
+        fillOpacity: 0.4,
+        stroke: true
+      };
+    }
+    
+    // Çayır / Otlak bölgeler - Açık yeşil tonları
+    if (searchText.includes('çayır') || searchText.includes('otlak') || searchText.includes('meadow') ||
+        searchText.includes('grass') || searchText.includes('pasture')) {
+      return { 
+        color: '#84cc16', 
+        fillColor: '#65a30d', 
+        weight: 2, 
+        fillOpacity: 0.4,
+        stroke: true
+      };
+    }
+    
+    // Ada / Adacık bölgeler - Mor tonları
+    if (searchText.includes('ada') || searchText.includes('island') || searchText.includes('isle')) {
+      return { 
+        color: '#a855f7', 
+        fillColor: '#9333ea', 
+        weight: 2, 
+        fillOpacity: 0.4,
+        stroke: true
+      };
+    }
+    
+    // Varsayılan renk (turuncu) - Bilinmeyen bölgeler
+    return { 
+      color: '#ffaa00', 
+      fillColor: '#ffaa00', 
+      weight: 2, 
+      fillOpacity: 0.5,
+      stroke: true
+    };
   };
 
   // --- KRİTİK NOKTA: TIKLAMA MANTIĞI BURADA ---
   const onEachFeature = (feature, layer) => {
     const name = feature.properties.name || 'Bölge';
+    const zoneId = feature.properties.zone_id || feature.properties.id;
 
-    // Popup içeriği
-    layer.bindPopup(`
+    // İlk popup içeriği (loading state)
+    const loadingContent = `
       <strong>${name}</strong><br/>
-      <span style="font-size:11px; color:#aaa;">Bölge ID: ${feature.properties.zone_id}</span>
-    `);
+      <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span><br/>
+      <span style="font-size:11px; color:#888;">İstatistikler yükleniyor...</span>
+    `;
+    
+    layer.bindPopup(loadingContent);
+
+    // Popup açıldığında istatistikleri yükle
+    layer.on('popupopen', async () => {
+      if (!zoneId) return;
+      
+      try {
+        const stats = await fetchZoneStats(zoneId);
+        const statsContent = `
+          <div style="min-width: 200px;">
+            <strong>${name}</strong><br/>
+            <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span>
+            <hr style="margin: 8px 0; border-color: #333;">
+            <div style="font-size:11px; line-height: 1.6;">
+              <div><strong>📅 Aktivite Sayısı:</strong> ${stats.activity_count || 0}</div>
+              <div><strong>💬 Post Sayısı:</strong> ${stats.post_count || 0}</div>
+              ${stats.avg_activity_duration_hours ? 
+                `<div><strong>⏱️ Ort. Aktivite Süresi:</strong> ${parseFloat(stats.avg_activity_duration_hours).toFixed(1)} saat</div>` : ''}
+              ${stats.earliest_activity ? 
+                `<div><strong>📆 İlk Aktivite:</strong> ${new Date(stats.earliest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
+              ${stats.latest_activity ? 
+                `<div><strong>📆 Son Aktivite:</strong> ${new Date(stats.latest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
+            </div>
+          </div>
+        `;
+        layer.setPopupContent(statsContent);
+      } catch (err) {
+        console.error('Bölge istatistikleri yüklenemedi:', err);
+        const errorContent = `
+          <strong>${name}</strong><br/>
+          <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span><br/>
+          <span style="font-size:11px; color:#dc2626;">İstatistikler yüklenemedi</span>
+        `;
+        layer.setPopupContent(errorContent);
+      }
+    });
 
     // Event Listener (Tıklama Olayı)
     layer.on({
@@ -208,6 +481,19 @@ const GameMap = ({ onZoneSelect }) => { // <--- Prop olarak onZoneSelect alıyor
 
       {/* Demo Balık */}
       <Marker position={fishPos} icon={fishIcon}><Popup>Demo Balık</Popup></Marker>
+
+      {/* Bölge Etkinlik Badge'leri */}
+      {zoneActivityMarkers.map((marker) => (
+        <Marker
+          key={`activity-${marker.zoneId}`}
+          position={marker.position}
+          icon={createActivityBadgeIcon(marker.activityCount)}
+        >
+          <Popup>
+            <strong>📅 Etkinlik Sayısı: {marker.activityCount}</strong>
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 };

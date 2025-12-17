@@ -4,6 +4,7 @@ import Forum from './Forum';
 import AdminPanels from './AdminPanels';
 import RentalHistoryPanel from './RentalHistoryPanel';
 import AccountingPanel from './AccountingPanel';
+import AdminStatsPanel from './AdminStatsPanel';
 import { loginUser, registerUser, fetchMe } from '../api/api';
 import { isAdmin } from '../utils/admin';
 
@@ -17,9 +18,12 @@ import {
   fetchMyActiveEquipment,
   returnAllEquipment,
   fetchUserInfo,
+  fetchUserStats,
+  fetchUserForumStats,
   fetchMyActiveBoatRentals,
   fetchMyPosts,
   fetchZoneActivities,
+  fetchUpcomingActivitiesByZone,
   fetchAllActivities,
   deleteBoat,
   deleteEquipment,
@@ -53,6 +57,7 @@ const ACCOUNT_SUBTABS = {
   RENTALS: 'rentals',
   POSTS: 'posts',
   ADMIN_RENTALS: 'admin_rentals', // Admin için
+  ADMIN_STATS: 'admin_stats', // Admin istatistikleri için
 };
 
 const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
@@ -73,9 +78,11 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
   const [equipmentActionMessage, setEquipmentActionMessage] = useState('');
 
   // 🔹 Account tab için state'ler
-  const [accountSubtab, setAccountSubtab] = useState(ACCOUNT_SUBTABS.RENTALS);
+  const [accountSubtab, setAccountSubtab] = useState(ACCOUNT_SUBTABS.LOGIN);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Şimdilik currentUser'dan kontrol edilecek
   const [userInfo, setUserInfo] = useState(null);
+  const [userStats, setUserStats] = useState(null);
+  const [userForumStats, setUserForumStats] = useState(null);
   const [myActiveRentals, setMyActiveRentals] = useState({ boats: [], equipment: [] });
   const [myPosts, setMyPosts] = useState([]);
   const [accountLoading, setAccountLoading] = useState(false);
@@ -100,6 +107,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
   const [rentalsLoading, setRentalsLoading] = useState(false);
   const [rentalHistoryPanelOpen, setRentalHistoryPanelOpen] = useState(false);
   const [accountingPanelOpen, setAccountingPanelOpen] = useState(false);
+  const [adminStatsPanelOpen, setAdminStatsPanelOpen] = useState(false);
 
 
 
@@ -190,10 +198,17 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
     if (currentUser && currentUser.user_id) {
       setIsLoggedIn(true);
 
-      // Refresh sonrası LOGIN'de kalmışsa veya ilk girişse RENTALS aç
-      setAccountSubtab((prev) =>
-        prev === ACCOUNT_SUBTABS.LOGIN ? ACCOUNT_SUBTABS.RENTALS : prev
-      );
+      // Refresh sonrası LOGIN'de kalmışsa veya ilk girişse subtab aç
+      setAccountSubtab((prev) => {
+        if (prev === ACCOUNT_SUBTABS.LOGIN) {
+          return isAdmin(currentUser) ? ACCOUNT_SUBTABS.PROFILE : ACCOUNT_SUBTABS.RENTALS;
+        }
+        // Admin ise ve RENTALS'taysa PROFILE'a yönlendir
+        if (isAdmin(currentUser) && prev === ACCOUNT_SUBTABS.RENTALS) {
+          return ACCOUNT_SUBTABS.PROFILE;
+        }
+        return prev;
+      });
 
       loadAccountData();
     } else {
@@ -223,6 +238,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
     loadAllRentals();
   }, [activeTab, accountSubtab, currentUser]);
 
+
   // Bölge seçildiğinde veya INFO tab aktif olduğunda etkinlikleri yükle
   useEffect(() => {
     if (activeTab !== TABS.INFO) {
@@ -238,7 +254,15 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           // Bölge seçiliyse o bölgenin etkinliklerini yükle
           const zoneId = selectedZone.zone_id || selectedZone.id;
           if (zoneId) {
-            data = await fetchZoneActivities(zoneId);
+            // Gelecek aktiviteleri ayrı bir sorgu ile çek
+            const upcomingData = await fetchUpcomingActivitiesByZone(zoneId).catch(() => []);
+            // Tüm aktiviteleri de çek (geçmiş ve güncel için)
+            const allData = await fetchZoneActivities(zoneId).catch(() => ({ past: [], current: [], upcoming: [] }));
+            // Gelecek aktiviteleri güncelle
+            data = {
+              ...allData,
+              upcoming: Array.isArray(upcomingData) ? upcomingData : []
+            };
           } else {
             data = { past: [], current: [], upcoming: [] };
           }
@@ -265,14 +289,18 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
     setAccountLoading(true);
     try {
       // Paralel olarak tüm verileri çek
-      const [userData, boatRentals, equipmentRentals, posts] = await Promise.all([
+      const [userData, stats, forumStats, boatRentals, equipmentRentals, posts] = await Promise.all([
         fetchUserInfo(currentUser.user_id).catch(() => null),
+        fetchUserStats(currentUser.user_id).catch(() => null),
+        fetchUserForumStats(currentUser.user_id).catch(() => null),
         fetchMyActiveBoatRentals().catch(() => []),
         fetchMyActiveEquipment().catch(() => []),
         fetchMyPosts().catch(() => []), //burası
       ]);
 
       setUserInfo(userData);
+      setUserStats(stats);
+      setUserForumStats(forumStats);
       setMyActiveRentals({ boats: boatRentals || [], equipment: equipmentRentals || [] });
       setMyPosts(posts || []);
     } catch (err) {
@@ -1052,21 +1080,23 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
         {/* Alt Tab Butonları */}
         <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #123', paddingBottom: '4px', marginBottom: '10px' }}>
-          <button
-            onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.RENTALS)}
-            style={{
-              flex: 1,
-              padding: '6px',
-              fontSize: '0.75rem',
-              border: 'none',
-              cursor: 'pointer',
-              background: accountSubtab === ACCOUNT_SUBTABS.RENTALS ? '#00ffff' : 'transparent',
-              color: accountSubtab === ACCOUNT_SUBTABS.RENTALS ? '#00111f' : '#9aa4b1',
-              fontWeight: accountSubtab === ACCOUNT_SUBTABS.RENTALS ? 'bold' : 'normal',
-            }}
-          >
-            Kiralamalarım
-          </button>
+          {!isAdmin(currentUser) && (
+            <button
+              onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.RENTALS)}
+              style={{
+                flex: 1,
+                padding: '6px',
+                fontSize: '0.75rem',
+                border: 'none',
+                cursor: 'pointer',
+                background: accountSubtab === ACCOUNT_SUBTABS.RENTALS ? '#00ffff' : 'transparent',
+                color: accountSubtab === ACCOUNT_SUBTABS.RENTALS ? '#00111f' : '#9aa4b1',
+                fontWeight: accountSubtab === ACCOUNT_SUBTABS.RENTALS ? 'bold' : 'normal',
+              }}
+            >
+              Kiralamalarım
+            </button>
+          )}
           <button
             onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.POSTS)}
             style={{
@@ -1098,21 +1128,38 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
             Profil
           </button>
           {isAdmin(currentUser) && (
-            <button
-              onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.ADMIN_RENTALS)}
-              style={{
-                flex: 1,
-                padding: '6px',
-                fontSize: '0.75rem',
-                border: 'none',
-                cursor: 'pointer',
-                background: accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS ? '#00ffff' : 'transparent',
-                color: accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS ? '#00111f' : '#9aa4b1',
-                fontWeight: accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS ? 'bold' : 'normal',
-              }}
-            >
-              Kiralamalar Yönetimi
-            </button>
+            <>
+              <button
+                onClick={() => setAccountSubtab(ACCOUNT_SUBTABS.ADMIN_RENTALS)}
+                style={{
+                  flex: 1,
+                  padding: '6px',
+                  fontSize: '0.75rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS ? '#00ffff' : 'transparent',
+                  color: accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS ? '#00111f' : '#9aa4b1',
+                  fontWeight: accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS ? 'bold' : 'normal',
+                }}
+              >
+                Kiralamalar Yönetimi
+              </button>
+              <button
+                onClick={() => setAdminStatsPanelOpen(true)}
+                style={{
+                  flex: 1,
+                  padding: '6px',
+                  fontSize: '0.75rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#00ffff',
+                  color: '#00111f',
+                  fontWeight: 'bold',
+                }}
+              >
+                İstatistikler
+              </button>
+            </>
           )}
         </div>
 
@@ -1123,7 +1170,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           ) : (
             <>
               {accountSubtab === ACCOUNT_SUBTABS.PROFILE && renderProfileSubtab()}
-              {accountSubtab === ACCOUNT_SUBTABS.RENTALS && renderRentalsSubtab()}
+              {accountSubtab === ACCOUNT_SUBTABS.RENTALS && !isAdmin(currentUser) && renderRentalsSubtab()}
               {accountSubtab === ACCOUNT_SUBTABS.POSTS && renderPostsSubtab()}
               {accountSubtab === ACCOUNT_SUBTABS.ADMIN_RENTALS && isAdmin(currentUser) && renderAdminRentalsSubtab()}
             </>
@@ -1147,6 +1194,46 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       ) : (
         <p style={{ color: '#888' }}>Kullanıcı bilgileri yüklenemedi.</p>
       )}
+
+      {/* Kullanıcı İstatistikleri - Sadece admin olmayan kullanıcılar için */}
+      {userStats && !isAdmin(currentUser) && (
+        <>
+          <h4 style={{ color: '#00ffff', margin: '15px 0 0 0' }}>📊 Kiralama İstatistikleri</h4>
+          <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 6, padding: 12 }}>
+            <p style={{ margin: '4px 0' }}>
+              <strong>Tekne Kiralamaları:</strong> {userStats.boat_rental_count || 0}
+            </p>
+            <p style={{ margin: '4px 0' }}>
+              <strong>Ekipman Kiralamaları:</strong> {userStats.equipment_rental_count || 0}
+            </p>
+            <p style={{ margin: '4px 0', color: '#60a5fa', fontSize: '1.1rem', fontWeight: 'bold' }}>
+              <strong>Toplam Harcama:</strong> {parseFloat(userStats.total_spent || 0).toFixed(2)} ₺
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Forum İstatistikleri */}
+      {userForumStats && (
+        <>
+          <h4 style={{ color: '#00ffff', margin: '15px 0 0 0' }}>💬 Forum İstatistikleri</h4>
+          <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: 6, padding: 12 }}>
+            <p style={{ margin: '4px 0' }}>
+              <strong>Post Sayısı:</strong> {userForumStats.post_count || 0}
+            </p>
+            <p style={{ margin: '4px 0' }}>
+              <strong>Yorum Sayısı:</strong> {userForumStats.comment_count || 0}
+            </p>
+            <p style={{ margin: '4px 0' }}>
+              <strong>Beğenilen Postlar:</strong> {userForumStats.liked_post_count || 0}
+            </p>
+            <p style={{ margin: '4px 0' }}>
+              <strong>Toplam Fotoğraf:</strong> {userForumStats.total_photos || 0}
+            </p>
+          </div>
+        </>
+      )}
+
       <button
         onClick={handleLogout}
         style={{
@@ -1157,6 +1244,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           borderRadius: '4px',
           cursor: 'pointer',
           fontWeight: 'bold',
+          marginTop: '15px',
         }}
       >
         Çıkış Yap
@@ -1490,6 +1578,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
     </div>
   );
 
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case TABS.INFO: return renderInfoTab();
@@ -1522,7 +1611,7 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
           onClick={() => {
             setActiveTab(TABS.ACCOUNT);
             if (localStorage.getItem('token')) {
-              setAccountSubtab(ACCOUNT_SUBTABS.RENTALS);
+              setAccountSubtab(isAdmin(currentUser) ? ACCOUNT_SUBTABS.PROFILE : ACCOUNT_SUBTABS.RENTALS);
             } else {
               setAccountSubtab(ACCOUNT_SUBTABS.LOGIN);
             }
@@ -1574,6 +1663,13 @@ const Sidebar = ({ selectedZone, currentUser, onLoginSuccess, onLogout }) => {
       {accountingPanelOpen && (
         <AccountingPanel
           onClose={() => setAccountingPanelOpen(false)}
+        />
+      )}
+
+      {/* Admin Stats Panel */}
+      {adminStatsPanelOpen && (
+        <AdminStatsPanel
+          onClose={() => setAdminStatsPanelOpen(false)}
         />
       )}
     </div>

@@ -448,6 +448,7 @@ exports.getAllActiveRentals = async () => {
                 u.full_name as user_name,
                 u.email as user_email,
                 EXTRACT(EPOCH FROM (GREATEST(r.end_at, NOW()) - r.start_at)) as duration_seconds,
+                EXTRACT(EPOCH FROM (NOW() - r.start_at)) / 3600 AS hours_elapsed,
                 CASE 
                     WHEN NOW() > r.end_at THEN 'expired'
                     ELSE 'active'
@@ -456,6 +457,7 @@ exports.getAllActiveRentals = async () => {
             JOIN boats b ON r.boat_id = b.boat_id
             JOIN users u ON r.user_id = u.user_id
             WHERE r.status = 'ongoing'
+            ORDER BY r.start_at ASC
         `;
 
         // Ekipman kiralamalarını getir
@@ -472,6 +474,7 @@ exports.getAllActiveRentals = async () => {
                 u.full_name as user_name,
                 u.email as user_email,
                 EXTRACT(EPOCH FROM (GREATEST(er.end_at, NOW()) - er.start_at)) as duration_seconds,
+                EXTRACT(EPOCH FROM (NOW() - er.start_at)) / 3600 AS hours_elapsed,
                 CASE 
                     WHEN NOW() > er.end_at THEN 'expired'
                     ELSE 'active'
@@ -480,6 +483,7 @@ exports.getAllActiveRentals = async () => {
             JOIN equipments e ON er.equipment_id = e.equipment_id
             JOIN users u ON er.user_id = u.user_id
             WHERE er.status = 'ongoing'
+            ORDER BY er.start_at ASC
         `;
 
         const [boatResult, equipmentResult] = await Promise.all([
@@ -809,4 +813,60 @@ exports.getMonthlyRevenue = async ({ year, month }) => {
     } finally {
         client.release();
     }
+};
+
+// Tekne ve Ekipman Gelir Analizi (Sorgu 5)
+exports.getRevenueAnalysis = async ({ year, month } = {}) => {
+    // Tarih filtresi için WHERE koşulları
+    let dateFilter = '';
+    const params = [];
+    let paramIndex = 1;
+    
+    if (year && month) {
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        dateFilter = `AND DATE_TRUNC('month', p.paid_at) = DATE_TRUNC('month', $${paramIndex}::date)`;
+        params.push(startDate);
+        paramIndex++;
+    }
+
+    const query = `
+        SELECT 
+            'Boat' AS rental_type,
+            b.boat_id AS item_id,
+            b.name AS item_name,
+            COUNT(r.rental_id) AS rental_count,
+            AVG(EXTRACT(EPOCH FROM (r.end_at - r.start_at)) / 3600) AS avg_rental_hours,
+            SUM(p.amount) AS total_revenue,
+            AVG(p.amount) AS avg_payment
+        FROM boats b
+        LEFT JOIN rentals r ON b.boat_id = r.boat_id
+        LEFT JOIN payments p ON r.rental_id = p.rental_id
+        WHERE (r.rental_id IS NULL OR p.payment_id IS NOT NULL)
+        ${dateFilter}
+        GROUP BY b.boat_id, b.name
+        HAVING COUNT(r.rental_id) > 0
+
+        UNION ALL
+
+        SELECT 
+            'Equipment' AS rental_type,
+            e.equipment_id AS item_id,
+            CONCAT(et.name, ' - ', COALESCE(e.brand, ''), ' ', COALESCE(e.model, '')) AS item_name,
+            COUNT(er.equipment_rental_id) AS rental_count,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(er.end_at, NOW()) - er.start_at)) / 3600) AS avg_rental_hours,
+            SUM(p.amount) AS total_revenue,
+            AVG(p.amount) AS avg_payment
+        FROM equipments e
+        JOIN equipment_types et ON e.type_id = et.type_id
+        LEFT JOIN equipment_rentals er ON e.equipment_id = er.equipment_id
+        LEFT JOIN payments p ON er.equipment_rental_id = p.equipment_rental_id
+        WHERE (er.equipment_rental_id IS NULL OR p.payment_id IS NOT NULL)
+        ${dateFilter}
+        GROUP BY e.equipment_id, et.name, e.brand, e.model
+        HAVING COUNT(er.equipment_rental_id) > 0
+
+        ORDER BY total_revenue DESC NULLS LAST
+    `;
+    const { rows } = await pool.query(query, params.length > 0 ? params : null);
+    return rows;
 };

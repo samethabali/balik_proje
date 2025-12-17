@@ -52,9 +52,45 @@ export const fetchUserInfo = async (userId) => {
   return handleResponse(response);
 };
 
+// Kullanıcı istatistikleri
+export const fetchUserStats = async (userId) => {
+  const response = await fetch(`${BASE_URL}/users/${userId}/stats`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Tüm kullanıcı istatistikleri (Admin)
+export const fetchAllUsersStats = async () => {
+  const response = await fetch(`${BASE_URL}/users/stats/all`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Aktif kullanıcılar listesi (Admin)
+export const fetchActiveUsers = async () => {
+  const response = await fetch(`${BASE_URL}/users/active`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
 // --- HARİTA VE BÖLGELER ---
 export const fetchZones = async () => {
   const response = await fetch(`${BASE_URL}/zones`);
+  return handleResponse(response);
+};
+
+// Bölge istatistikleri
+export const fetchZoneStats = async (zoneId) => {
+  const response = await fetch(`${BASE_URL}/zones/${zoneId}/stats`);
+  return handleResponse(response);
+};
+
+// Tüm bölge istatistikleri
+export const fetchAllZonesStats = async () => {
+  const response = await fetch(`${BASE_URL}/zones/stats/all`);
   return handleResponse(response);
 };
 
@@ -262,6 +298,19 @@ export const fetchMonthlyRevenue = async ({ year, month }) => {
   return handleResponse(response);
 };
 
+// Gelir analizi (Admin)
+export const fetchRevenueAnalysis = async ({ year, month } = {}) => {
+  const params = new URLSearchParams();
+  if (year) params.append('year', year);
+  if (month) params.append('month', month);
+  
+  const url = `${BASE_URL}/rentals/admin/revenue-analysis${params.toString() ? '?' + params.toString() : ''}`;
+  const response = await fetch(url, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
 // --- ETKİNLİKLER ---
 export const fetchAllActivities = async () => {
   const response = await fetch(`${BASE_URL}/activities`);
@@ -285,6 +334,13 @@ export const fetchAllActivities = async () => {
 export const fetchZoneActivities = async (zoneId) => {
   const response = await fetch(`${BASE_URL}/activities/zone/${zoneId}`);
   if (!response.ok) return { past: [], current: [], upcoming: [] };
+  return handleResponse(response);
+};
+
+// Gelecek aktiviteler (bölgeye göre)
+export const fetchUpcomingActivitiesByZone = async (zoneId) => {
+  const response = await fetch(`${BASE_URL}/activities/zone/${zoneId}/upcoming`);
+  if (!response.ok) return [];
   return handleResponse(response);
 };
 
@@ -338,6 +394,20 @@ export const createComment = async (postId, content) => {
 export const togglePostLike = async (postId) => {
   const response = await fetch(`${BASE_URL}/forum/posts/${postId}/like`, {
     method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Kullanıcı forum istatistikleri
+export const fetchUserForumStats = async (userId) => {
+  const response = await fetch(`${BASE_URL}/forum/user-stats/${userId}`);
+  return handleResponse(response);
+};
+
+// Tüm kullanıcı forum istatistikleri (Admin)
+export const fetchAllUsersForumStats = async () => {
+  const response = await fetch(`${BASE_URL}/forum/user-stats/all`, {
     headers: authHeaders(),
   });
   return handleResponse(response);

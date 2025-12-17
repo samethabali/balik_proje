@@ -40,7 +40,8 @@ exports.getAvailableBoats = async () => {
       status,
       ST_AsGeoJSON(current_geom) AS geometry
     FROM boats
-    WHERE status = 'available';
+    WHERE status = 'available'
+    ORDER BY price_per_hour ASC;
   `;
 
   const { rows } = await pool.query(query);

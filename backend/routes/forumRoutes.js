@@ -4,6 +4,11 @@ const forumController = require('../controllers/forumController');
 const authMiddleware = require('../middleware/authMiddleware');
 // 👇 AŞAĞIDA VERDİĞİM YENİ MİDDLEWARE'İ BURAYA IMPORT ET
 const optionalAuthMiddleware = require('../middleware/optionalAuthMiddleware'); 
+const adminMiddleware = require('../middleware/adminMiddleware');
+
+// Spesifik route'lar önce
+router.get('/user-stats/all', authMiddleware, adminMiddleware, forumController.getAllUsersForumStats);
+router.get('/user-stats/:userId', forumController.getUserForumStats);
 
 // Post İşlemleri
 router.get('/posts', optionalAuthMiddleware, forumController.getAllPosts);

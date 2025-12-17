@@ -1,6 +1,6 @@
 // frontend/src/components/Forum.jsx
 import React, { useState, useEffect } from 'react';
-import { fetchAllPosts, fetchZonePosts, createPost, fetchComments, createComment, fetchZones, togglePostLike } from '../api/api';
+import { fetchAllPosts, fetchZonePosts, createPost, fetchComments, createComment, fetchZones, togglePostLike, fetchUserForumStats } from '../api/api';
 
 const Forum = ({ selectedZone, currentUser }) => {
   // ---------------- STATE TANIMLARI ----------------
@@ -23,6 +23,10 @@ const Forum = ({ selectedZone, currentUser }) => {
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
+
+  // Forum İstatistikleri State
+  const [forumStats, setForumStats] = useState(null);
+  const [forumStatsLoading, setForumStatsLoading] = useState(false);
 
   const isLoggedIn = !!localStorage.getItem('token');
 
@@ -65,6 +69,29 @@ const Forum = ({ selectedZone, currentUser }) => {
     loadPosts();
     loadZonesList();
   }, [selectedZone]);
+
+  // Forum istatistiklerini yükle (kullanıcı giriş yapmışsa)
+  useEffect(() => {
+    const loadForumStats = async () => {
+      if (!currentUser || !currentUser.user_id) {
+        setForumStats(null);
+        return;
+      }
+
+      setForumStatsLoading(true);
+      try {
+        const stats = await fetchUserForumStats(currentUser.user_id);
+        setForumStats(stats);
+      } catch (err) {
+        console.error('Forum istatistikleri yüklenemedi:', err);
+        setForumStats(null);
+      } finally {
+        setForumStatsLoading(false);
+      }
+    };
+
+    loadForumStats();
+  }, [currentUser]);
 
   // 2. Yorumları Aç/Kapa
   const toggleComments = async (postId) => {
@@ -193,6 +220,43 @@ const Forum = ({ selectedZone, currentUser }) => {
         </h3>
         <button onClick={handleOpenModal} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#00ffff', color: '#00111f', fontWeight: 'bold', fontSize: '0.85rem' }}>+ Paylaş</button>
       </div>
+
+      {/* Forum İstatistikleri */}
+      {currentUser && currentUser.user_id && (
+        <div style={{ 
+          background: 'rgba(34, 197, 94, 0.1)', 
+          border: '1px solid rgba(34, 197, 94, 0.3)', 
+          borderRadius: 6, 
+          padding: 12, 
+          marginBottom: '16px' 
+        }}>
+          <h4 style={{ color: '#4ade80', margin: '0 0 10px 0', fontSize: '0.9rem' }}>💬 Forum İstatistikleriniz</h4>
+          {forumStatsLoading ? (
+            <p style={{ color: '#888', fontSize: '0.85rem' }}>Yükleniyor...</p>
+          ) : forumStats ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
+              <div>
+                <span style={{ color: '#ccc' }}>Post Sayısı: </span>
+                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{forumStats.post_count || 0}</span>
+              </div>
+              <div>
+                <span style={{ color: '#ccc' }}>Yorum Sayısı: </span>
+                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{forumStats.comment_count || 0}</span>
+              </div>
+              <div>
+                <span style={{ color: '#ccc' }}>Beğenilen Postlar: </span>
+                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{forumStats.liked_post_count || 0}</span>
+              </div>
+              <div>
+                <span style={{ color: '#ccc' }}>Toplam Fotoğraf: </span>
+                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{forumStats.total_photos || 0}</span>
+              </div>
+            </div>
+          ) : (
+            <p style={{ color: '#888', fontSize: '0.85rem' }}>İstatistikler yüklenemedi.</p>
+          )}
+        </div>
+      )}
 
       {/* Post Listesi */}
       {loading ? ( <p style={{ textAlign: 'center', color: '#888' }}>Yükleniyor...</p> ) : (

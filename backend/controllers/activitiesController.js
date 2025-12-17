@@ -58,3 +58,16 @@ exports.deleteActivity = asyncWrapper(async (req, res) => {
   res.json(activity);
 });
 
+// Bölgeye göre gelecek aktiviteleri getir (Sorgu 7)
+exports.getUpcomingActivitiesByZone = asyncWrapper(async (req, res) => {
+  const { zoneId } = req.params;
+  const zoneIdNum = parseInt(zoneId, 10);
+
+  if (Number.isNaN(zoneIdNum)) {
+    return res.status(400).json({ error: 'Geçersiz bölge ID' });
+  }
+
+  const activities = await activitiesService.getUpcomingActivitiesByZone(zoneIdNum);
+  res.json(activities);
+});
+

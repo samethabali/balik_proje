@@ -10,7 +10,12 @@ const signToken = (user) => {
         role_id: user.role_id,
     };
 
-    return jwt.sign(payload, process.env.JWT_SECRET, {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        throw new Error('JWT_SECRET environment variable is not set. Please add it to your .env file.');
+    }
+
+    return jwt.sign(payload, jwtSecret, {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     });
 };

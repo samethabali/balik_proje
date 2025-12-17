@@ -132,6 +132,57 @@ class ForumService {
   const { rows } = await pool.query(query, [userId]);
   return rows;
 }
+
+  // 7. Kullanıcı forum istatistiklerini getir (Sorgu 4)
+  static async getUserForumStats(userId) {
+    const query = `
+      SELECT 
+        u.user_id,
+        u.full_name,
+        u.email,
+        COUNT(DISTINCT p.post_id) AS post_count,
+        COUNT(DISTINCT c.comment_id) AS comment_count,
+        COUNT(DISTINCT l.post_id) AS liked_post_count,
+        COUNT(DISTINCT pp.photo_id) AS total_photos
+      FROM users u
+      LEFT JOIN posts p ON u.user_id = p.user_id
+      LEFT JOIN comments c ON u.user_id = c.user_id
+      LEFT JOIN likes l ON u.user_id = l.user_id
+      LEFT JOIN post_photos pp ON p.post_id = pp.post_id
+      WHERE u.user_id = $1
+      GROUP BY u.user_id, u.full_name, u.email
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    if (rows.length === 0) {
+      throw new Error('Kullanıcı bulunamadı');
+    }
+    return rows[0];
+  }
+
+  // 8. Tüm kullanıcıların forum istatistiklerini getir (Sorgu 4 - Admin)
+  static async getAllUsersForumStats() {
+    const query = `
+      SELECT 
+        u.user_id,
+        u.full_name,
+        u.email,
+        COUNT(DISTINCT p.post_id) AS post_count,
+        COUNT(DISTINCT c.comment_id) AS comment_count,
+        COUNT(DISTINCT l.post_id) AS liked_post_count,
+        COUNT(DISTINCT pp.photo_id) AS total_photos
+      FROM users u
+      LEFT JOIN posts p ON u.user_id = p.user_id
+      LEFT JOIN comments c ON u.user_id = c.user_id
+      LEFT JOIN likes l ON u.user_id = l.user_id
+      LEFT JOIN post_photos pp ON p.post_id = pp.post_id
+      GROUP BY u.user_id, u.full_name, u.email
+      HAVING 
+        COUNT(DISTINCT p.post_id) > 0 OR COUNT(DISTINCT c.comment_id) > 0
+      ORDER BY post_count DESC, comment_count DESC
+    `;
+    const { rows } = await pool.query(query);
+    return rows;
+  }
 }
 
 module.exports = ForumService;

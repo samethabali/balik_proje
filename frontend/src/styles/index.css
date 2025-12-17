@@ -23,6 +23,28 @@ body, html, #root {
   animation: pulse 2s infinite ease-in-out;
 }
 
+/* Etkinlik Badge Animasyonları */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+.activity-badge-icon {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.activity-badge-icon:hover {
+  transform: scale(1.1);
+  z-index: 1000;
+}
+
 /* Forum Scroll Bar Stilleri */
 .forum-main-scroll::-webkit-scrollbar,
 .forum-comments-scroll::-webkit-scrollbar,
@@ -82,5 +104,56 @@ body, html, #root {
 .rental-history-scroll,
 .accounting-panel-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 255, 0.4) rgba(0, 0, 0, 0.3);
+  scrollbar-color: rgba(0, 255, 255, 0.6) rgba(0, 0, 0, 0.5);
+}
+
+/* AccountingPanel için özel scroll bar stilleri */
+.accounting-panel-scroll::-webkit-scrollbar {
+  width: 10px !important;
+}
+
+.accounting-panel-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.accounting-panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.6) !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+}
+
+.accounting-panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.8) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.6) !important;
+}
+
+/* AdminStatsPanel için scroll bar stilleri */
+.admin-stats-panel-scroll::-webkit-scrollbar {
+  width: 10px !important;
+}
+
+.admin-stats-panel-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.admin-stats-panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.6) !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+}
+
+.admin-stats-panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.8) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.6) !important;
+}
+
+.admin-stats-panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.6) rgba(0, 0, 0, 0.5);
 }

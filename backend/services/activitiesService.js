@@ -123,3 +123,22 @@ exports.deleteActivity = async (activityId) => {
   return rows[0];
 };
 
+// Bölgeye göre gelecek aktiviteleri getir (Sorgu 7)
+exports.getUpcomingActivitiesByZone = async (zoneId) => {
+  const query = `
+    SELECT 
+      a.activity_id,
+      a.title,
+      a.description,
+      a.start_date,
+      a.end_date,
+      lz.name AS zone_name
+    FROM activities a
+    JOIN lake_zones lz ON a.zone_id = lz.zone_id
+    WHERE a.start_date > NOW() AND lz.zone_id = $1
+    ORDER BY a.start_date ASC
+  `;
+  const { rows } = await pool.query(query, [zoneId]);
+  return rows;
+};
+

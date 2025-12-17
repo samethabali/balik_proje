@@ -16,6 +16,7 @@ const {
     closeRental,
     getCompletedRentals,
     getMonthlyRevenue,
+    getRevenueAnalysis,
 } = require('../controllers/rentalsController');
 
 // Tekne kiralama başlat
@@ -48,5 +49,6 @@ router.get('/admin/all', authMiddleware, adminMiddleware, getAllActiveRentals);
 router.post('/admin/:id/close', authMiddleware, adminMiddleware, closeRental);
 router.get('/admin/completed', authMiddleware, adminMiddleware, getCompletedRentals);
 router.get('/admin/revenue', authMiddleware, adminMiddleware, getMonthlyRevenue);
+router.get('/admin/revenue-analysis', authMiddleware, adminMiddleware, getRevenueAnalysis);
 
 module.exports = router;

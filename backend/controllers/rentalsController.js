@@ -119,3 +119,21 @@ exports.getMonthlyRevenue = asyncWrapper(async (req, res) => {
     const revenue = await rentalsService.getMonthlyRevenue({ year: yearNum, month: monthNum });
     res.json(revenue);
 });
+
+// Admin: Tekne ve Ekipman Gelir Analizi (Sorgu 5)
+exports.getRevenueAnalysis = asyncWrapper(async (req, res) => {
+    const { year, month } = req.query;
+    
+    let params = {};
+    if (year && month) {
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10);
+        
+        if (!Number.isNaN(yearNum) && !Number.isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+            params = { year: yearNum, month: monthNum };
+        }
+    }
+    
+    const analysis = await rentalsService.getRevenueAnalysis(params);
+    res.json(analysis);
+});

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { fetchUpcomingActivitiesByZone, fetchZoneStats } from '../../api/api';
@@ -52,74 +52,110 @@ export const createActivityBadgeIcon = (count) => {
     html: `
       <div style="
         position: relative;
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
       ">
+        <!-- Animated ripple background -->
         <div style="
           position: absolute;
           width: 100%;
           height: 100%;
-          background: radial-gradient(circle, rgba(245, 158, 11, 0.4) 0%, rgba(245, 158, 11, 0) 70%);
-          border-radius: 50%;
-          animation: pulse-glow 2s ease-in-out infinite;
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(8, 145, 178, 0.15) 100%);
+          border-radius: 10px;
+          animation: ripple-wave 2.8s ease-in-out infinite;
         "></div>
+        
+        <!-- Main badge container -->
         <div style="
           position: relative;
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
-          border: 3px solid #fff;
-          border-radius: 50%;
-          width: 36px;
-          height: 36px;
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(8, 145, 178, 0.25) 100%);
+          backdrop-filter: blur(10px);
+          border: 1.5px solid rgba(6, 182, 212, 0.4);
+          border-radius: 10px;
+          width: 32px;
+          height: 32px;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
+          flex-direction: column;
           box-shadow: 
-            0 4px 12px rgba(0, 0, 0, 0.5),
-            0 0 20px rgba(245, 158, 11, 0.6),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
-          transform: translateZ(0);
-          transition: all 0.3s ease;
+            0 4px 16px rgba(6, 182, 212, 0.15),
+            0 0 1px rgba(6, 182, 212, 0.3) inset,
+            0 0 0 0.5px rgba(255, 255, 255, 0.1) inset;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         ">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 2px;">
-            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="white" opacity="0.9"/>
-          </svg>
+          <!-- Water droplet accent -->
+          <div style="
+            position: absolute;
+            top: -5px;
+            width: 6px;
+            height: 6px;
+            background: rgba(6, 182, 212, 0.5);
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            animation: float-drop 2s ease-in-out infinite;
+          "></div>
+          
+          <!-- Counter display -->
           <span style="
-            font-weight: 900;
-            font-size: 11px;
-            color: white;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            font-weight: 800;
+            font-size: 13px;
+            color: rgba(6, 182, 212, 0.9);
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
             line-height: 1;
-            margin-top: -2px;
+            letter-spacing: -0.5px;
           ">${count}</span>
+          
+          <!-- Icon/Label -->
+          <span style="
+            font-size: 7px;
+            color: rgba(6, 182, 212, 0.6);
+            font-weight: 700;
+            margin-top: 0px;
+            letter-spacing: 0.3px;
+          ">AKTİF</span>
         </div>
       </div>
       <style>
-        @keyframes pulse-glow {
+        @keyframes ripple-wave {
           0%, 100% {
-            opacity: 0.6;
+            opacity: 0.3;
             transform: scale(1);
           }
           50% {
-            opacity: 1;
-            transform: scale(1.3);
+            opacity: 0.5;
+            transform: scale(1.1);
           }
         }
-        .activity-badge-icon:hover div:last-child {
-          transform: scale(1.15);
+        
+        @keyframes float-drop {
+          0%, 100% {
+            transform: rotate(-45deg) translateY(0);
+            opacity: 0.4;
+          }
+          50% {
+            transform: rotate(-45deg) translateY(-4px);
+            opacity: 0.8;
+          }
+        }
+        
+        .activity-badge-icon:hover > div:nth-child(2) {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.5) 0%, rgba(8, 145, 178, 0.4) 100%);
+          border-color: rgba(6, 182, 212, 0.6);
           box-shadow: 
-            0 6px 16px rgba(0, 0, 0, 0.6),
-            0 0 30px rgba(245, 158, 11, 0.8),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            0 6px 20px rgba(6, 182, 212, 0.25),
+            0 0 2px rgba(6, 182, 212, 0.5) inset,
+            0 0 0 0.5px rgba(255, 255, 255, 0.15) inset;
+          transform: translateY(-2px);
         }
       </style>
     `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -20]
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
   });
 };
 
@@ -155,168 +191,151 @@ export const BoatMarker = ({ boat }) => {
 };
 
 // Activity Badge Marker Component
-export const ActivityBadgeMarker = ({ zoneId, position, activityCount }) => {
-  const markerRef = useRef(null);
+// Activity Badge Marker Component
+const ActivityBadgePopupContent = ({ zoneId }) => {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const marker = markerRef.current?.leafletElement;
-    if (!marker) return;
-
-    const loadingContent = '<div style="text-align: center; padding: 10px;">Yükleniyor...</div>';
-    marker.bindPopup(loadingContent);
-
-    const handlePopupOpen = async () => {
+    const loadActivities = async () => {
       try {
+        console.log('Fetching activities for zoneId:', zoneId);
         const upcomingActivities = await fetchUpcomingActivitiesByZone(zoneId);
-        const futureActivities = upcomingActivities.filter(activity => {
-          const startDate = new Date(activity.start_date);
-          return startDate > new Date();
-        });
+        console.log('Fetched activities:', upcomingActivities);
+        
+        const now = new Date();
+        
+        // Filter for active and future activities only (not past)
+        const activeAndFutureActivities = Array.isArray(upcomingActivities)
+          ? upcomingActivities.filter(activity => {
+              const endDate = new Date(activity.end_date);
+              return endDate > now;
+            })
+          : [];
 
-        let content = '';
-        if (futureActivities.length === 0) {
-          content = '<div style="text-align: center; padding: 10px; color: #888;">Gelecek etkinlik bulunmuyor.</div>';
-        } else {
-          content = `
-            <div style="min-width: 250px; max-width: 350px;">
-              <h4 style="margin: 0 0 10px 0; color: #f59e0b; font-size: 14px;">📅 Gelecek Etkinlikler (${futureActivities.length})</h4>
-              <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
-          `;
-
-          futureActivities.forEach((activity) => {
-            const startDate = new Date(activity.start_date);
-            const endDate = new Date(activity.end_date);
-            const formattedStart = startDate.toLocaleString('tr-TR', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-            const formattedEnd = endDate.toLocaleString('tr-TR', {
-              day: '2-digit',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-
-            content += `
-              <div style="
-                background: rgba(245, 158, 11, 0.1);
-                border: 1px solid rgba(245, 158, 11, 0.3);
-                border-radius: 6px;
-                padding: 10px;
-                margin-bottom: 8px;
-              ">
-                <div style="font-weight: bold; color: #f59e0b; margin-bottom: 6px; font-size: 13px;">
-                  ${activity.title || 'Etkinlik'}
-                </div>
-                ${activity.description ? `
-                  <div style="color: #ccc; font-size: 11px; margin-bottom: 6px;">
-                    ${activity.description.substring(0, 100)}${activity.description.length > 100 ? '...' : ''}
-                  </div>
-                ` : ''}
-                <div style="font-size: 11px; color: #aaa;">
-                  <div>🕐 Başlangıç: ${formattedStart}</div>
-                  <div>🕐 Bitiş: ${formattedEnd}</div>
-                  ${activity.zone_name ? `<div>📍 Bölge: ${activity.zone_name}</div>` : ''}
-                </div>
-              </div>
-            `;
-          });
-
-          content += `
-              </div>
-            </div>
-          `;
-        }
-
-        marker.setPopupContent(content);
+        console.log('Active and future activities:', activeAndFutureActivities);
+        setActivities(activeAndFutureActivities);
+        setLoading(false);
       } catch (err) {
-        console.error('Etkinlikler yüklenemedi:', err);
-        marker.setPopupContent('<div style="text-align: center; padding: 10px; color: #dc2626;">Etkinlikler yüklenirken hata oluştu.</div>');
+        console.error('Etkinlikler yüklenemedi:', err, err.stack);
+        setError(err.message);
+        setLoading(false);
       }
     };
 
-    marker.on('popupopen', handlePopupOpen);
-
-    return () => {
-      marker.off('popupopen', handlePopupOpen);
-    };
+    loadActivities();
   }, [zoneId]);
 
+  if (loading) {
+    return <div style={{ padding: '10px', textAlign: 'center' }}>Yükleniyor...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: '10px', color: '#dc2626', textAlign: 'center' }}>Hata: {error}</div>;
+  }
+
+  if (activities.length === 0) {
+    return <div style={{ padding: '10px', color: '#888', textAlign: 'center' }}>Aktif veya gelecek etkinlik bulunmuyor.</div>;
+  }
+
+  return (
+    <div style={{ minWidth: '280px', maxWidth: '380px' }}>
+      <h4 style={{ margin: '0 0 12px 0', color: '#f59e0b', fontSize: '14px' }}>
+        📅 Aktif & Gelecek Etkinlikler ({activities.length})
+      </h4>
+      <div style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '5px' }}>
+        {activities.map((activity) => {
+          const now = new Date();
+          const startDate = new Date(activity.start_date);
+          const endDate = new Date(activity.end_date);
+          const isActive = startDate <= now && endDate > now;
+          const statusBadge = isActive 
+            ? { bg: '#10b981', text: '🟢 Aktif' }
+            : { bg: '#3b82f6', text: '🔵 Gelecek' };
+
+          const formattedStart = startDate.toLocaleString('tr-TR', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          return (
+            <div
+              key={activity.activity_id}
+              style={{
+                background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+                borderRadius: '6px',
+                padding: '10px',
+                marginBottom: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              className="activity-badge-item"
+              onClick={() => console.log('Activity clicked:', activity.activity_id)}
+            >
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '6px'
+              }}>
+                <strong style={{
+                  color: isActive ? '#10b981' : '#3b82f6',
+                  fontSize: '12px'
+                }}>
+                  {activity.title || 'Etkinlik'}
+                </strong>
+                <span style={{
+                  background: statusBadge.bg,
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  fontWeight: 'bold'
+                }}>
+                  {statusBadge.text}
+                </span>
+              </div>
+              {activity.description && (
+                <div style={{
+                  color: '#ccc',
+                  fontSize: '11px',
+                  marginBottom: '6px'
+                }}>
+                  {activity.description.substring(0, 80)}{activity.description.length > 80 ? '...' : ''}
+                </div>
+              )}
+              <div style={{
+                fontSize: '10px',
+                color: '#aaa'
+              }}>
+                🕐 {formattedStart}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const ActivityBadgeMarker = ({ zoneId, position, activityCount }) => {
   return (
     <Marker
-      ref={markerRef}
       position={position}
       icon={createActivityBadgeIcon(activityCount)}
     >
-      <Popup />
+      <Popup>
+        <ActivityBadgePopupContent zoneId={zoneId} />
+      </Popup>
     </Marker>
   );
 };
 
 // Zone Popup Handler Component
-export const ZoneFeature = ({ feature, onZoneSelect }) => {
-  const layerRef = useRef(null);
-
-  useEffect(() => {
-    const layer = layerRef.current?.leafletElement;
-    if (!layer) return;
-
-    const name = feature.properties.name || 'Bölge';
-    const zoneId = feature.properties.zone_id || feature.properties.id;
-
-    const loadingContent = `
-      <strong>${name}</strong><br/>
-      <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span><br/>
-      <span style="font-size:11px; color:#888;">İstatistikler yükleniyor...</span>
-    `;
-
-    layer.bindPopup(loadingContent);
-
-    layer.on('popupopen', async () => {
-      if (!zoneId) return;
-
-      try {
-        const stats = await fetchZoneStats(zoneId);
-        const statsContent = `
-          <div style="min-width: 200px;">
-            <strong>${name}</strong><br/>
-            <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span>
-            <hr style="margin: 8px 0; border-color: #333;">
-            <div style="font-size:11px; line-height: 1.6;">
-              <div><strong>📅 Aktivite Sayısı:</strong> ${stats.activity_count || 0}</div>
-              <div><strong>💬 Post Sayısı:</strong> ${stats.post_count || 0}</div>
-              ${stats.avg_activity_duration_hours ?
-            `<div><strong>⏱️ Ort. Aktivite Süresi:</strong> ${parseFloat(stats.avg_activity_duration_hours).toFixed(1)} saat</div>` : ''}
-              ${stats.earliest_activity ?
-            `<div><strong>📆 İlk Aktivite:</strong> ${new Date(stats.earliest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
-              ${stats.latest_activity ?
-            `<div><strong>📆 Son Aktivite:</strong> ${new Date(stats.latest_activity).toLocaleDateString('tr-TR')}</div>` : ''}
-            </div>
-          </div>
-        `;
-        layer.setPopupContent(statsContent);
-      } catch (err) {
-        console.error('Bölge istatistikleri yüklenemedi:', err);
-        const errorContent = `
-          <strong>${name}</strong><br/>
-          <span style="font-size:11px; color:#aaa;">Bölge ID: ${zoneId}</span><br/>
-          <span style="font-size:11px; color:#dc2626;">İstatistikler yüklenemedi</span>
-        `;
-        layer.setPopupContent(errorContent);
-      }
-    });
-
-    layer.on({
-      click: (e) => {
-        L.DomEvent.stopPropagation(e);
-        onZoneSelect(feature.properties);
-      }
-    });
-  }, [feature, onZoneSelect]);
-
-  return null;
-};
+// Bu bileşen artık MapMarkers.jsx dosyasında değildir
+// Popup işlemi GameMap/index.jsx dosyasındaki onEachFeature callback'inde gerçekleştirilmektedir
 

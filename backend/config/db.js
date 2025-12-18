@@ -19,9 +19,9 @@ const pool = new Pool({
   ssl: databaseUrl.includes('localhost') 
     ? false 
     : { rejectUnauthorized: false }, // Supabase için gerekli
-  max: 20, // Havuzdaki maksimum bağlantı sayısı
+  max: 10, // Havuzdaki maksimum bağlantı sayısı
   idleTimeoutMillis: 30000, // 30 saniye boşta kalan bağlantıyı kapat (Supabase kapatmadan biz kapatalım)
-  connectionTimeoutMillis: 5000, // Bağlantı kurmak 2 saniyeden uzun sürerse hata ver
+  connectionTimeoutMillis: 5000, // Bağlantı kurmak 5 saniyeden uzun sürerse hata ver
 });
 
 // Beklenmedik hataları yakala (Uygulamanın çökmesini engeller)

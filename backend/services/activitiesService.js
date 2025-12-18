@@ -135,7 +135,7 @@ exports.getUpcomingActivitiesByZone = async (zoneId) => {
       lz.name AS zone_name
     FROM activities a
     JOIN lake_zones lz ON a.zone_id = lz.zone_id
-    WHERE a.start_date > NOW() AND lz.zone_id = $1
+    WHERE a.end_date > NOW() AND lz.zone_id = $1
     ORDER BY a.start_date ASC
   `;
   const { rows } = await pool.query(query, [zoneId]);
